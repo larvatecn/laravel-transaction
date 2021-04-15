@@ -3,7 +3,13 @@
 @section('title', __('Charge Return'))
 
 @section('content')
-    @if($charge)
-        支付
-    @endif
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                @if($charge)
+                    支付成功！
+                @endif
+            </div>
+        </div>
+    </div>
 @endsection
