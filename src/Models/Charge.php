@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailure;
@@ -276,7 +277,7 @@ class Charge extends Model
     public function setFailure(string $code, string $msg): bool
     {
         $status = $this->update(['failure_code' => $code, 'failure_msg' => $msg]);
-        event(new ChargeFailure($this));
+        Event::dispatch(new ChargeFailure($this));
         return $status;
     }
 
@@ -291,7 +292,7 @@ class Charge extends Model
             return true;
         }
         $paid = $this->update(['transaction_no' => $transactionNo, 'time_paid' => $this->freshTimestamp(), 'paid' => true]);
-        event(new ChargeShipped($this));
+        Event::dispatch(new ChargeShipped($this));
         return $paid;
     }
 
@@ -311,7 +312,7 @@ class Charge extends Model
             $channel = Transaction::getChannel($this->channel);
             try {
                 if ($channel->close($this->id)) {
-                    event(new ChargeClosed($this));
+                    Event::dispatch(new ChargeClosed($this));
                     $this->update(['reversed' => true, 'credential' => []]);
                     return true;
                 }

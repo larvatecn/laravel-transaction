@@ -16,6 +16,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Events\RefundFailure;
 use Larva\Transaction\Events\RefundSuccess;
 use Larva\Transaction\Transaction;
@@ -210,7 +211,7 @@ class Refund extends Model
     {
         $succeed = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         $this->charge->update(['amount_refunded' => $this->charge->amount_refunded - $this->amount]);//可退款金额，减回去
-        event(new RefundFailure($this));
+        Event::dispatch(new RefundFailure($this));
         return $succeed;
     }
 
@@ -226,7 +227,7 @@ class Refund extends Model
             return true;
         }
         $this->update(['status' => self::STATUS_SUCCEEDED, 'transaction_no' => $transactionNo, 'time_succeed' => $this->freshTimestamp(), 'extra' => $params]);
-        event(new RefundSuccess($this));
+        Event::dispatch(new RefundSuccess($this));
         return $this->succeed;
     }
 

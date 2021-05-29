@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Events\TransferFailure;
 use Larva\Transaction\Events\TransferShipped;
 use Larva\Transaction\Transaction;
@@ -219,7 +220,7 @@ class Transfer extends Model
             return true;
         }
         $paid = (bool)$this->update(['transaction_no' => $transactionNo, 'transferred_at' => $this->freshTimestamp(), 'status' => static::STATUS_PAID, 'extra' => $params]);
-        event(new TransferShipped($this));
+        Event::dispatch(new TransferShipped($this));
         return $paid;
     }
 
@@ -232,7 +233,7 @@ class Transfer extends Model
     public function setFailure(string $code, string $msg): bool
     {
         $res = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
-        event(new TransferFailure($this));
+        Event::dispatch(new TransferFailure($this));
         return $res;
     }
 
