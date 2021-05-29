@@ -140,7 +140,7 @@ class Transfer extends Model
      * 多态关联
      * @return MorphTo
      */
-    public function order()
+    public function source(): MorphTo
     {
         return $this->morphTo();
     }
@@ -150,7 +150,7 @@ class Transfer extends Model
      *
      * @return BelongsTo
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(
             config('auth.providers.' . config('auth.guards.web.provider') . '.model')
@@ -162,7 +162,7 @@ class Transfer extends Model
      * @param Builder $query
      * @return Builder
      */
-    public function scopePaid($query)
+    public function scopePaid(Builder $query): Builder
     {
         return $query->where('status', 'paid');
     }
@@ -209,7 +209,7 @@ class Transfer extends Model
      * @param array $params
      * @return bool
      */
-    public function setPaid($transactionNo, $params = [])
+    public function setPaid(string $transactionNo, array $params = [])
     {
         if ($this->paid) {
             return true;
@@ -225,9 +225,9 @@ class Transfer extends Model
      * @param string $msg
      * @return bool
      */
-    public function setFailure($code, $msg)
+    public function setFailure(string $code, string $msg): bool
     {
-        $res = (bool)$this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
+        $res = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         event(new TransferFailure($this));
         return $res;
     }

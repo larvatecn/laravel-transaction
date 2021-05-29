@@ -144,7 +144,7 @@ class Refund extends Model
      *
      * @return BelongsTo
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(
             config('auth.providers.' . config('auth.guards.web.provider') . '.model')
@@ -156,7 +156,7 @@ class Refund extends Model
      *
      * @return BelongsTo
      */
-    public function charge()
+    public function charge(): BelongsTo
     {
         return $this->belongsTo(Charge::class);
     }
@@ -203,7 +203,7 @@ class Refund extends Model
      * @param string $msg
      * @return bool
      */
-    public function setFailure($code, $msg): bool
+    public function setFailure(string $code, string $msg): bool
     {
         $succeed = (bool)$this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         $this->charge->update(['amount_refunded' => bcsub($this->charge->amount_refunded, $this->amount)]);//可退款金额，减回去
@@ -217,7 +217,7 @@ class Refund extends Model
      * @param array $params
      * @return bool
      */
-    public function setRefunded($transactionNo, $params = []): bool
+    public function setRefunded(string $transactionNo, array $params = []): bool
     {
         if ($this->succeed) {
             return true;

@@ -168,7 +168,7 @@ class Charge extends Model
     public function getCredential(string $channel, string $type): array
     {
         $this->update(['channel' => $channel, 'type' => $type]);
-        $this->send();
+        $this->prePay();
         $this->refresh();
         return $this->credential;
     }
@@ -178,7 +178,7 @@ class Charge extends Model
      * @param Builder $query
      * @return Builder
      */
-    public function scopePaid($query)
+    public function scopePaid(Builder $query): Builder
     {
         return $query->where('paid', true);
     }
@@ -187,7 +187,7 @@ class Charge extends Model
      * 多态关联
      * @return MorphTo
      */
-    public function order()
+    public function source(): MorphTo
     {
         return $this->morphTo();
     }
@@ -197,7 +197,7 @@ class Charge extends Model
      *
      * @return BelongsTo
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(
             config('auth.providers.' . config('auth.guards.web.provider') . '.model')
@@ -208,7 +208,7 @@ class Charge extends Model
      * 关联退款
      * @return HasMany
      */
-    public function refunds()
+    public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class);
     }
@@ -267,9 +267,9 @@ class Charge extends Model
      * @param string $msg
      * @return bool
      */
-    public function setFailure($code, $msg)
+    public function setFailure(string $code, string $msg): bool
     {
-        $status = (bool)$this->update(['failure_code' => $code, 'failure_msg' => $msg]);
+        $status = $this->update(['failure_code' => $code, 'failure_msg' => $msg]);
         event(new ChargeFailure($this));
         return $status;
     }
@@ -279,12 +279,12 @@ class Charge extends Model
      * @param string $transactionNo 支付渠道返回的交易流水号。
      * @return bool
      */
-    public function setPaid($transactionNo): bool
+    public function setPaid(string $transactionNo): bool
     {
         if ($this->paid) {
             return true;
         }
-        $paid = (bool)$this->update(['transaction_no' => $transactionNo, 'time_paid' => $this->freshTimestamp(), 'paid' => true]);
+        $paid = $this->update(['transaction_no' => $transactionNo, 'time_paid' => $this->freshTimestamp(), 'paid' => true]);
         event(new ChargeShipped($this));
         return $paid;
     }
@@ -320,12 +320,13 @@ class Charge extends Model
     /**
      * 发起退款
      * @param string $description 退款描述
-     * @return Model|Refund
+     * @return Refund
      * @throws Exception
      */
-    public function setRefund($description)
+    public function setRefund(string $description): Refund
     {
         if ($this->paid) {
+            /** @var Refund $refund */
             $refund = $this->refunds()->create([
                 'user_id' => $this->user_id,
                 'amount' => $this->amount,
@@ -343,7 +344,7 @@ class Charge extends Model
      * 订单付款预下单
      * @throws InvalidGatewayException
      */
-    public function send()
+    public function prePay()
     {
         $channel = Transaction::getChannel($this->channel);
         $order = [
