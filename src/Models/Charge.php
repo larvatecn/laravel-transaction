@@ -9,10 +9,17 @@
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
+use DateTimeInterface;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
+use Larva\Transaction\Events\ChargeClosed;
+use Larva\Transaction\Events\ChargeFailure;
+use Larva\Transaction\Events\ChargeShipped;
 use Larva\Transaction\Transaction;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -126,17 +133,17 @@ class Charge extends Model
         static::creating(function ($model) {
             /** @var Charge $model */
             $model->id = $model->generateId();
-            $model->currency = $model->currency ? $model->currency : 'CNY';
+            $model->currency = $model->currency ?: 'CNY';
         });
     }
 
     /**
      * 为数组 / JSON 序列化准备日期。
      *
-     * @param \DateTimeInterface $date
+     * @param DateTimeInterface $date
      * @return string
      */
-    protected function serializeDate(\DateTimeInterface $date)
+    protected function serializeDate(DateTimeInterface $date): string
     {
         return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
@@ -148,7 +155,7 @@ class Charge extends Model
      * @return array
      * @throws \Yansongda\Pay\Exceptions\InvalidGatewayException
      */
-    public function getCredential($channel, $type)
+    public function getCredential($channel, $type): array
     {
         $this->update(['channel' => $channel, 'type' => $type]);
         $this->send();
@@ -158,8 +165,8 @@ class Charge extends Model
 
     /**
      * 查询已付款的
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param Builder $query
+     * @return Builder
      */
     public function scopePaid($query)
     {
@@ -168,9 +175,9 @@ class Charge extends Model
 
     /**
      * 多态关联
-     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     * @return MorphTo
      */
-    public function order()
+    public function order(): MorphTo
     {
         return $this->morphTo();
     }
@@ -178,9 +185,9 @@ class Charge extends Model
     /**
      * 获取用户关联
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(
             config('auth.providers.' . config('auth.guards.web.provider') . '.model')
@@ -253,7 +260,7 @@ class Charge extends Model
     public function setFailure($code, $msg)
     {
         $status = (bool)$this->update(['failure_code' => $code, 'failure_msg' => $msg]);
-        event(new \Larva\Transaction\Events\ChargeFailure($this));
+        event(new ChargeFailure($this));
         return $status;
     }
 
@@ -268,7 +275,7 @@ class Charge extends Model
             return true;
         }
         $paid = (bool)$this->update(['transaction_no' => $transactionNo, 'time_paid' => $this->freshTimestamp(), 'paid' => true]);
-        event(new \Larva\Transaction\Events\ChargeShipped($this));
+        event(new ChargeShipped($this));
         return $paid;
     }
 
@@ -288,18 +295,12 @@ class Charge extends Model
             $channel = Transaction::getChannel($this->channel);
             try {
                 if ($channel->close($this->id)) {
-                    event(new \Larva\Transaction\Events\ChargeClosed($this));
+                    event(new ChargeClosed($this));
                     $this->update(['reversed' => true, 'credential' => []]);
                     return true;
                 }
                 return false;
-            } catch (GatewayException $e) {
-                Log::error($e->getMessage());
-            } catch (InvalidArgumentException $e) {
-                Log::error($e->getMessage());
-            } catch (InvalidConfigException $e) {
-                Log::error($e->getMessage());
-            } catch (InvalidSignException $e) {
+            } catch (GatewayException | InvalidArgumentException | InvalidConfigException | InvalidSignException $e) {
                 Log::error($e->getMessage());
             }
         }

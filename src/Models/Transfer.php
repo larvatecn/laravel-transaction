@@ -9,8 +9,14 @@
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Larva\Transaction\Events\TransferFailure;
+use Larva\Transaction\Events\TransferShipped;
 use Larva\Transaction\Transaction;
 
 /**
@@ -113,17 +119,17 @@ class Transfer extends Model
     /**
      * 为数组 / JSON 序列化准备日期。
      *
-     * @param \DateTimeInterface $date
+     * @param DateTimeInterface $date
      * @return string
      */
-    protected function serializeDate(\DateTimeInterface $date)
+    protected function serializeDate(DateTimeInterface $date): string
     {
         return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
 
     /**
      * 多态关联
-     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     * @return MorphTo
      */
     public function order()
     {
@@ -133,7 +139,7 @@ class Transfer extends Model
     /**
      * Get the user that the charge belongs to.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function user()
     {
@@ -144,8 +150,8 @@ class Transfer extends Model
 
     /**
      * 查询已付款的
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param Builder $query
+     * @return Builder
      */
     public function scopePaid($query)
     {
@@ -154,9 +160,9 @@ class Transfer extends Model
 
     /**
      * 生成流水号
-     * @return int
+     * @return string
      */
-    protected function generateId()
+    protected function generateId(): string
     {
         $i = rand(0, 9999);
         do {
@@ -164,7 +170,7 @@ class Transfer extends Model
                 $i = 0;
             }
             $i++;
-            $id = time() . str_pad($i, 4, '0', STR_PAD_LEFT);
+            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
             $row = static::query()->where($this->primaryKey, $id)->exists();
         } while ($row);
         return $id;
@@ -174,7 +180,7 @@ class Transfer extends Model
      * 是否已付款
      * @return boolean
      */
-    public function getPaidAttribute()
+    public function getPaidAttribute(): bool
     {
         return $this->status == static::STATUS_PAID;
     }
@@ -183,7 +189,7 @@ class Transfer extends Model
      * 是否待发送
      * @return boolean
      */
-    public function getScheduledAttribute()
+    public function getScheduledAttribute(): bool
     {
         return $this->status == static::STATUS_SCHEDULED;
     }
@@ -200,7 +206,7 @@ class Transfer extends Model
             return true;
         }
         $paid = (bool)$this->update(['transaction_no' => $transactionNo, 'transferred_at' => $this->freshTimestamp(), 'status' => static::STATUS_PAID, 'extra' => $params]);
-        event(new \Larva\Transaction\Events\TransferShipped($this));
+        event(new TransferShipped($this));
         return $paid;
     }
 
@@ -213,7 +219,7 @@ class Transfer extends Model
     public function setFailure($code, $msg)
     {
         $res = (bool)$this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
-        event(new \Larva\Transaction\Events\TransferFailure($this));
+        event(new TransferFailure($this));
         return $res;
     }
 

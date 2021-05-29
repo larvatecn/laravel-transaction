@@ -9,8 +9,12 @@
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Larva\Transaction\Events\RefundFailure;
+use Larva\Transaction\Events\RefundSuccess;
 use Larva\Transaction\Transaction;
 
 /**
@@ -118,10 +122,10 @@ class Refund extends Model
     /**
      * 为数组 / JSON 序列化准备日期。
      *
-     * @param \DateTimeInterface $date
+     * @param DateTimeInterface $date
      * @return string
      */
-    protected function serializeDate(\DateTimeInterface $date)
+    protected function serializeDate(DateTimeInterface $date): string
     {
         return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
@@ -129,7 +133,7 @@ class Refund extends Model
     /**
      * Get the user that the charge belongs to.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function user()
     {
@@ -141,7 +145,7 @@ class Refund extends Model
     /**
      * 关联收单
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function charge()
     {
@@ -150,9 +154,9 @@ class Refund extends Model
 
     /**
      * 生成流水号
-     * @return int
+     * @return string
      */
-    protected function generateId()
+    protected function generateId(): string
     {
         $i = rand(0, 9999);
         do {
@@ -160,7 +164,7 @@ class Refund extends Model
                 $i = 0;
             }
             $i++;
-            $id = time() . str_pad($i, 4, '0', STR_PAD_LEFT);
+            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
             $row = static::query()->where($this->primaryKey, $id)->exists();
         } while ($row);
         return $id;
@@ -170,7 +174,7 @@ class Refund extends Model
      * 获取微信退款资金来源
      * @return string
      */
-    public function getFundingSource()
+    public function getFundingSource(): string
     {
         return config('transaction.wechat.unsettled_funds', 'REFUND_SOURCE_RECHARGE_FUNDS');
     }
@@ -179,7 +183,7 @@ class Refund extends Model
      * 退款是否成功
      * @return bool
      */
-    public function getSucceedAttribute()
+    public function getSucceedAttribute(): bool
     {
         return $this->status == self::STATUS_SUCCEEDED;
     }
@@ -194,7 +198,7 @@ class Refund extends Model
     {
         $succeed = (bool)$this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         $this->charge->update(['amount_refunded' => bcsub($this->charge->amount_refunded, $this->amount)]);//可退款金额，减回去
-        event(new \Larva\Transaction\Events\RefundFailure($this));
+        event(new RefundFailure($this));
         return $succeed;
     }
 
@@ -210,7 +214,7 @@ class Refund extends Model
             return true;
         }
         $this->update(['status' => self::STATUS_SUCCEEDED, 'transaction_no' => $transactionNo, 'time_succeed' => $this->freshTimestamp(), 'extra' => $params]);
-        event(new \Larva\Transaction\Events\RefundSuccess($this));
+        event(new RefundSuccess($this));
         return $this->succeed;
     }
 
