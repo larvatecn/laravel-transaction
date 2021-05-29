@@ -14,6 +14,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +28,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Yansongda\Pay\Exceptions\GatewayException;
 use Yansongda\Pay\Exceptions\InvalidArgumentException;
 use Yansongda\Pay\Exceptions\InvalidConfigException;
+use Yansongda\Pay\Exceptions\InvalidGatewayException;
 use Yansongda\Pay\Exceptions\InvalidSignException;
 use Yansongda\Supports\Collection;
 
@@ -97,8 +99,9 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'paid', 'refunded', 'reversed', 'type', 'channel', 'amount', 'currency', 'subject', 'body', 'client_ip', 'extra', 'time_paid',
-        'time_expire', 'transaction_no', 'amount_refunded', 'failure_code', 'failure_msg', 'metadata', 'credential', 'description'
+        'id', 'user_id', 'paid', 'refunded', 'reversed', 'type', 'channel', 'amount', 'currency', 'subject', 'body',
+        'client_ip', 'extra', 'time_paid',        'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
+        'failure_msg', 'metadata', 'credential', 'description'
     ];
 
     /**
@@ -160,9 +163,9 @@ class Charge extends Model
      * @param string $channel
      * @param string $type
      * @return array
-     * @throws \Yansongda\Pay\Exceptions\InvalidGatewayException
+     * @throws InvalidGatewayException
      */
-    public function getCredential($channel, $type): array
+    public function getCredential(string $channel, string $type): array
     {
         $this->update(['channel' => $channel, 'type' => $type]);
         $this->send();
@@ -184,7 +187,7 @@ class Charge extends Model
      * 多态关联
      * @return MorphTo
      */
-    public function order(): MorphTo
+    public function order()
     {
         return $this->morphTo();
     }
@@ -194,7 +197,7 @@ class Charge extends Model
      *
      * @return BelongsTo
      */
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(
             config('auth.providers.' . config('auth.guards.web.provider') . '.model')
@@ -203,7 +206,7 @@ class Charge extends Model
 
     /**
      * 关联退款
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function refunds()
     {
@@ -214,7 +217,7 @@ class Charge extends Model
      * 是否还可以继续退款
      * @return boolean
      */
-    public function getAllowRefundAttribute()
+    public function getAllowRefundAttribute(): bool
     {
         if ($this->paid && $this->refundable > 0) {
             return true;
@@ -226,7 +229,7 @@ class Charge extends Model
      * 获取可退款钱数
      * @return string
      */
-    public function getRefundableAttribute()
+    public function getRefundableAttribute(): string
     {
         return bcsub($this->amount, $this->amount_refunded);
     }
@@ -235,16 +238,16 @@ class Charge extends Model
      * 获取Body
      * @return string
      */
-    public function getBodyAttribute()
+    public function getBodyAttribute(): string
     {
-        return $this->attributes['body'] ? $this->attributes['body'] : $this->subject;
+        return $this->attributes['body'] ?: $this->subject;
     }
 
     /**
      * 生成流水号
-     * @return int
+     * @return string
      */
-    public function generateId()
+    public function generateId(): string
     {
         $i = rand(0, 9999);
         do {
@@ -252,7 +255,7 @@ class Charge extends Model
                 $i = 0;
             }
             $i++;
-            $id = time() . str_pad($i, 4, '0', STR_PAD_LEFT);
+            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
             $row = static::query()->where('id', '=', $id)->exists();
         } while ($row);
         return $id;
@@ -276,7 +279,7 @@ class Charge extends Model
      * @param string $transactionNo 支付渠道返回的交易流水号。
      * @return bool
      */
-    public function setPaid($transactionNo)
+    public function setPaid($transactionNo): bool
     {
         if ($this->paid) {
             return true;
@@ -291,7 +294,7 @@ class Charge extends Model
      * @return bool
      * @throws Exception
      */
-    public function setClose()
+    public function setClose(): bool
     {
         if ($this->paid) {
             $this->update(['failure_code' => 'FAIL', 'failure_msg' => '已支付，无法撤销']);
@@ -338,9 +341,7 @@ class Charge extends Model
 
     /**
      * 订单付款预下单
-     * @param Charge $charge
-     * @throws \Yansongda\Pay\Exceptions\InvalidGatewayException
-     * @throws Exception
+     * @throws InvalidGatewayException
      */
     public function send()
     {

@@ -10,6 +10,7 @@ namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
 use DateTimeInterface;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -83,7 +84,8 @@ class Refund extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg', 'charge_order_id', 'transaction_no', 'funding_source', 'metadata', 'extra', 'time_succeed'
+        'id', 'user_id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg', 'charge_order_id',
+        'transaction_no', 'funding_source', 'metadata', 'extra', 'time_succeed'
     ];
 
     /**
@@ -201,7 +203,7 @@ class Refund extends Model
      * @param string $msg
      * @return bool
      */
-    public function setFailure($code, $msg)
+    public function setFailure($code, $msg): bool
     {
         $succeed = (bool)$this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         $this->charge->update(['amount_refunded' => bcsub($this->charge->amount_refunded, $this->amount)]);//可退款金额，减回去
@@ -215,7 +217,7 @@ class Refund extends Model
      * @param array $params
      * @return bool
      */
-    public function setRefunded($transactionNo, $params = [])
+    public function setRefunded($transactionNo, $params = []): bool
     {
         if ($this->succeed) {
             return true;
@@ -228,9 +230,9 @@ class Refund extends Model
     /**
      * 网关退款
      * @return Refund
-     * @throws \Exception
+     * @throws Exception
      */
-    public function send()
+    public function send(): Refund
     {
         $this->charge->update(['refunded' => true, 'amount_refunded' => $this->charge->amount_refunded + $this->amount]);
         $channel = Transaction::getChannel($this->charge->channel);
@@ -252,7 +254,7 @@ class Refund extends Model
             try {
                 $response = $channel->refund($order);
                 $this->setRefunded($response->transaction_id, $response);
-            } catch (\Exception $exception) {//设置失败
+            } catch (Exception $exception) {//设置失败
                 $this->setFailure('FAIL', $exception->getMessage());
             }
         } else if ($this->charge->channel == Transaction::CHANNEL_ALIPAY) {
@@ -267,7 +269,7 @@ class Refund extends Model
             try {
                 $response = $channel->refund($order);
                 $this->setRefunded($response->trade_no, $response);
-            } catch (\Exception $exception) {//设置失败
+            } catch (Exception $exception) {//设置失败
                 $this->setFailure('FAIL', $exception->getMessage());
             }
         }

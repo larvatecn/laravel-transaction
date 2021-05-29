@@ -10,6 +10,7 @@ namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
 use DateTimeInterface;
+use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -81,7 +82,8 @@ class Transfer extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'channel', 'status', 'amount', 'currency', 'recipient_id', 'description', 'transaction_no', 'failure_msg', 'metadata', 'extra', 'transferred_at'
+        'id', 'user_id', 'channel', 'status', 'amount', 'currency', 'recipient_id', 'description', 'transaction_no',
+        'failure_msg', 'metadata', 'extra', 'transferred_at'
     ];
 
     /**
@@ -118,7 +120,7 @@ class Transfer extends Model
         static::creating(function ($model) {
             /** @var Transfer $model */
             $model->id = $model->generateId();
-            $model->currency = $model->currency ? $model->currency : 'CNY';
+            $model->currency = $model->currency ?: 'CNY';
             $model->status = static::STATUS_SCHEDULED;
         });
     }
@@ -233,9 +235,9 @@ class Transfer extends Model
     /**
      * 主动发送付款请求到网关
      * @return Transfer
-     * @throws \Exception
+     * @throws Exception
      */
-    public function send()
+    public function send(): Transfer
     {
         if ($this->status == static::STATUS_SCHEDULED) {
             $channel = Transaction::getChannel($this->channel);
@@ -255,7 +257,7 @@ class Transfer extends Model
                 try {
                     $response = $channel->transfer($config);
                     $this->setPaid($response->payment_no, $response);
-                } catch (\Exception $exception) {//设置付款失败
+                } catch (Exception $exception) {//设置付款失败
                     $this->setFailure('FAIL', $exception->getMessage());
                 }
             } else if ($this->channel == Transaction::CHANNEL_ALIPAY) {
@@ -272,7 +274,7 @@ class Transfer extends Model
                 try {
                     $response = $channel->transfer($config);
                     $this->setPaid($response->payment_no, $response);
-                } catch (\Exception $exception) {//设置提现失败
+                } catch (Exception $exception) {//设置提现失败
                     $this->setFailure('FAIL', $exception->getMessage());
                 }
             }
