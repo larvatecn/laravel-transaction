@@ -6,6 +6,8 @@
  * @license http://www.larva.com.cn/license/
  */
 
+declare (strict_types = 1);
+
 namespace Larva\Transaction;
 
 use Illuminate\Contracts\Routing\Registrar as Router;

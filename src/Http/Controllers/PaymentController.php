@@ -5,6 +5,8 @@
  * @license http://www.larvacent.com/license/
  */
 
+declare (strict_types = 1);
+
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Contracts\Routing\ResponseFactory;
