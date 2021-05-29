@@ -29,7 +29,6 @@ use Larva\Transaction\Transaction;
  * @property string $channel 付款渠道
  * @property-read boolean $paid 是否已经转账
  * @property string $status 状态
- * @property mixed $source 触发源对象
  * @property int $amount 金额
  * @property string $currency 币种
  * @property string $recipient_id 接收者ID
@@ -43,6 +42,9 @@ use Larva\Transaction\Transaction;
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
  * @property-read boolean $scheduled
+ *
+ * @property Model $order
+ * @property \App\Models\User $user
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
@@ -142,7 +144,7 @@ class Transfer extends Model
      * 多态关联
      * @return MorphTo
      */
-    public function source(): MorphTo
+    public function order(): MorphTo
     {
         return $this->morphTo();
     }
@@ -211,7 +213,7 @@ class Transfer extends Model
      * @param array $params
      * @return bool
      */
-    public function setPaid(string $transactionNo, array $params = [])
+    public function setPaid(string $transactionNo, array $params = []): bool
     {
         if ($this->paid) {
             return true;

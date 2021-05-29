@@ -41,6 +41,7 @@ use Larva\Transaction\Transaction;
  * @property CarbonInterface $time_succeed 成功时间
  *
  * @property Charge $charge
+ * @property \App\Models\User $user
  * @property-read boolean $succeed
  *
  * @author Tongle Xu <xutongle@gmail.com>
@@ -208,7 +209,7 @@ class Refund extends Model
     public function setFailure(string $code, string $msg): bool
     {
         $succeed = (bool)$this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
-        $this->charge->update(['amount_refunded' => bcsub($this->charge->amount_refunded, $this->amount)]);//可退款金额，减回去
+        $this->charge->update(['amount_refunded' => $this->charge->amount_refunded - $this->amount]);//可退款金额，减回去
         event(new RefundFailure($this));
         return $succeed;
     }

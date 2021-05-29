@@ -6,7 +6,7 @@
  * @license http://www.larva.com.cn/license/
  */
 
-declare (strict_types = 1);
+declare (strict_types=1);
 
 namespace Larva\Transaction\Models;
 
@@ -59,6 +59,10 @@ use Yansongda\Supports\Collection;
  * @property array $metadata 元数据
  * @property array $extra 渠道数据
  *
+ * @property \App\Models\User $user
+ * @property Model $order 触发该收款的订单模型
+ * @property Refund $refunds
+ *
  * @property CarbonInterface $time_paid 付款时间
  * @property CarbonInterface $deleted_at 软删除时间
  * @property CarbonInterface $created_at 创建时间
@@ -102,7 +106,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'user_id', 'paid', 'refunded', 'reversed', 'type', 'channel', 'amount', 'currency', 'subject', 'body',
-        'client_ip', 'extra', 'time_paid',        'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
+        'client_ip', 'extra', 'time_paid', 'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
         'failure_msg', 'metadata', 'credential', 'description'
     ];
 
@@ -229,11 +233,11 @@ class Charge extends Model
 
     /**
      * 获取可退款钱数
-     * @return string
+     * @return float|int
      */
-    public function getRefundableAttribute(): string
+    public function getRefundableAttribute()
     {
-        return bcsub($this->amount, $this->amount_refunded);
+        return $this->amount - $this->amount_refunded;
     }
 
     /**
@@ -334,7 +338,7 @@ class Charge extends Model
                 'amount' => $this->amount,
                 'description' => $description,
                 'charge_id' => $this->id,
-                'charge_order_id' => $this->order_id,
+                'charge_order_id' => $this->order,
             ]);
             $this->update(['refunded' => true]);
             return $refund;
