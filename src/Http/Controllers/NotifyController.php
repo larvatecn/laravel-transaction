@@ -13,6 +13,8 @@ namespace Larva\Transaction\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Larva\Transaction\Transaction;
+use Symfony\Component\HttpFoundation\Response;
+use Yansongda\Pay\Exceptions\InvalidArgumentException;
 
 /**
  * 通知回调
@@ -23,12 +25,12 @@ class NotifyController
 {
     /**
      * 付款通知回调
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      * @param string $channel 回调的渠道
-     * @return \Symfony\Component\HttpFoundation\Response
-     * @throws \Yansongda\Pay\Exceptions\InvalidArgumentException
+     * @return Response
+     * @throws InvalidArgumentException
      */
-    public function charge(Request $request, $channel)
+    public function charge(Request $request, string $channel): Response
     {
         try {
             $pay = Transaction::getChannel($channel);
@@ -55,12 +57,12 @@ class NotifyController
 
     /**
      * 退款通知回调
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      * @param string $channel 回调的渠道
-     * @return \Symfony\Component\HttpFoundation\Response
-     * @throws \Yansongda\Pay\Exceptions\InvalidArgumentException
+     * @return Response
+     * @throws InvalidArgumentException
      */
-    public function refund(Request $request, $channel)
+    public function refund(Request $request, string $channel): Response
     {
         try {
             $pay = Transaction::getChannel($channel);
@@ -68,7 +70,7 @@ class NotifyController
             if ($channel == Transaction::CHANNEL_WECHAT) {
                 if ($params['refund_status'] == 'SUCCESS') {//入账
                     $refund = Transaction::getRefund($params['out_refund_no']);
-                    $refund->setRefunded($params['success_time'], $params);
+                    $refund->setRefunded($params['success_time'], $params->toArray());
                 }
                 Log::debug('Wechat refund notify', $params->all());
             }
