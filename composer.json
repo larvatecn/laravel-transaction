@@ -14,7 +14,7 @@
     "illuminate/queue": "^6.0 || ^7.0 || ^8.0",
     "illuminate/database": "^6.0 || ^7.0 || ^8.0",
     "illuminate/support": "^6.0 || ^7.0 || ^8.0",
-    "yansongda/pay": "^2.9"
+    "yansongda/pay": "^2.10"
   },
   "autoload": {
     "psr-4": {
