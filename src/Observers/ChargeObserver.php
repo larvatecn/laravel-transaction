@@ -10,6 +10,7 @@ namespace Larva\Transaction\Observers;
 
 use Larva\Transaction\Jobs\CheckChargeJob;
 use Larva\Transaction\Models\Charge;
+use Yansongda\Pay\Exceptions\InvalidGatewayException;
 
 /**
  * 支付模型观察者
@@ -23,7 +24,7 @@ class ChargeObserver
      *
      * @param Charge $charge
      * @return void
-     * @throws \Yansongda\Pay\Exceptions\InvalidGatewayException
+     * @throws InvalidGatewayException
      */
     public function created(Charge $charge)
     {

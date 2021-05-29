@@ -5,6 +5,8 @@
  * @license http://www.larvacent.com/license/
  */
 
+declare (strict_types = 1);
+
 namespace Larva\Transaction\Jobs;
 
 use Illuminate\Bus\Queueable;
