@@ -208,7 +208,7 @@ class Refund extends Model
      */
     public function setFailure(string $code, string $msg): bool
     {
-        $succeed = (bool)$this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
+        $succeed = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         $this->charge->update(['amount_refunded' => $this->charge->amount_refunded - $this->amount]);//可退款金额，减回去
         event(new RefundFailure($this));
         return $succeed;
@@ -256,7 +256,7 @@ class Refund extends Model
             ];
             try {
                 $response = $channel->refund($order);
-                $this->setRefunded($response->transaction_id, $response);
+                $this->setRefunded($response->transaction_id, $response->toArray());
             } catch (Exception $exception) {//设置失败
                 $this->setFailure('FAIL', $exception->getMessage());
             }
@@ -271,7 +271,7 @@ class Refund extends Model
             ];
             try {
                 $response = $channel->refund($order);
-                $this->setRefunded($response->trade_no, $response);
+                $this->setRefunded($response->trade_no, $response->toArray());
             } catch (Exception $exception) {//设置失败
                 $this->setFailure('FAIL', $exception->getMessage());
             }

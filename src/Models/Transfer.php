@@ -260,7 +260,7 @@ class Transfer extends Model
                 }
                 try {
                     $response = $channel->transfer($config);
-                    $this->setPaid($response->payment_no, $response);
+                    $this->setPaid($response->payment_no, $response->toArray());
                 } catch (Exception $exception) {//设置付款失败
                     $this->setFailure('FAIL', $exception->getMessage());
                 }
@@ -277,7 +277,7 @@ class Transfer extends Model
                 }
                 try {
                     $response = $channel->transfer($config);
-                    $this->setPaid($response->payment_no, $response);
+                    $this->setPaid($response->payment_no, $response->toArray());
                 } catch (Exception $exception) {//设置提现失败
                     $this->setFailure('FAIL', $exception->getMessage());
                 }
