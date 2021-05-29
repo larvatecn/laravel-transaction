@@ -68,6 +68,13 @@ class Refund extends Model
     protected $primaryKey = 'id';
 
     /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
+    /**
      * @var bool 关闭主键自增
      */
     public $incrementing = false;

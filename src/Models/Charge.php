@@ -32,7 +32,7 @@ use Yansongda\Supports\Collection;
 
 /**
  * 支付模型
- * @property int $id
+ * @property string $id
  * @property int $user_id 用户ID
  * @property boolean $reversed 已撤销
  * @property boolean $refunded 已退款
@@ -80,6 +80,13 @@ class Charge extends Model
      * @var string 主键名称
      */
     protected $primaryKey = 'id';
+
+    /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
 
     /**
      * @var bool 关闭主键自增
