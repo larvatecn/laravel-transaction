@@ -26,7 +26,7 @@ class CreateTransactionChargesTable extends Migration
             $table->string('currency', 3)->default('CNY');//3 位 ISO 货币代码，人民币为  CNY 。
             $table->string('subject', 64);//商品标题，该参数最长为 64 个 Unicode 字符
             $table->string('body', 128)->nullable();//商品描述信息，该参数最长为 128 个 Unicode 字符
-            $table->string('description', 191)->nullable();//订单附加说明，最多 191 个 Unicode 字符。
+            $table->string('description', 500)->nullable();//订单附加说明，最多 191 个 Unicode 字符。
             $table->ipAddress('client_ip')->nullable();//发起支付请求客户端的 IP 地址
             $table->timestamp('time_paid', 0)->nullable();//订单支付完成时的 时间。（银联支付成功时间为接收异步通知的时间）
             $table->timestamp('time_expire', 0)->nullable();//订单失效时间

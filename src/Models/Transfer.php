@@ -6,7 +6,7 @@
  * @license http://www.larva.com.cn/license/
  */
 
-declare (strict_types = 1);
+declare (strict_types=1);
 
 namespace Larva\Transaction\Models;
 
@@ -269,7 +269,7 @@ class Transfer extends Model
                     'out_biz_no' => $this->id,
                     'payee_type' => $this->extra['recipient_account_type'],
                     'payee_account' => $this->recipient_id,
-                    'amount' => bcdiv($this->amount, 100, 2),
+                    'amount' => $this->amount / 100,
                     'remark' => $this->description,
                 ];
                 if (isset($this->extra['recipient_name'])) {

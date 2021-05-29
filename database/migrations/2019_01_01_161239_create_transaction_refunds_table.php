@@ -18,8 +18,8 @@ class CreateTransactionRefundsTable extends Migration
             $table->unsignedBigInteger('user_id');
             $table->string('charge_id',64);//支付  charge 对象的  id
             $table->unsignedInteger('amount');//退款金额大于 0, 必须小于等于可退款金额，默认为全额退款。
-            $table->string('status')->default('pending');//退款状态（目前支持三种状态: pending: 处理中; succeeded: 成功; failed: 失败）。
-            $table->string('description',191)->nullable();//退款详情，最多 191 个 Unicode 字符。
+            $table->string('status')->default(\Larva\Transaction\Models\Refund::STATUS_PENDING);//退款状态（目前支持三种状态: pending: 处理中; succeeded: 成功; failed: 失败）。
+            $table->string('description',500)->nullable();//退款详情，最多 191 个 Unicode 字符。
             $table->string('failure_code')->nullable();//订单的错误码
             $table->string('failure_msg')->nullable();//订单的错误消息的描述。
             $table->string('charge_order_id',64)->nullable();//商户订单号，这边返回的是  charge 对象中的  order_no 参数。

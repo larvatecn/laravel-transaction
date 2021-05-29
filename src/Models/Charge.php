@@ -366,7 +366,7 @@ class Charge extends Model
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } else if ($this->channel == Transaction::CHANNEL_ALIPAY) {
-            $order['total_amount'] = bcdiv($this->amount, 100, 2);//总钱数，单位元
+            $order['total_amount'] = $this->amount / 100;//总钱数，单位元
             $order['subject'] = $this->subject;
             if ($this->body) {
                 $order['body'] = $this->body;

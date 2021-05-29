@@ -6,7 +6,7 @@
  * @license http://www.larva.com.cn/license/
  */
 
-declare (strict_types = 1);
+declare (strict_types=1);
 
 namespace Larva\Transaction\Models;
 
@@ -265,7 +265,7 @@ class Refund extends Model
                 'out_trade_no' => $this->charge->id,
                 'trade_no' => $this->charge->transaction_no,
                 'refund_currency' => $this->charge->currency,
-                'refund_amount' => bcdiv($this->amount, 100, 2),
+                'refund_amount' => $this->amount / 100,
                 'refund_reason' => '退款',
                 'out_request_no' => $this->id
             ];
