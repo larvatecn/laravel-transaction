@@ -271,7 +271,7 @@ class Charge extends Model
      * @param string $msg
      * @return bool
      */
-    public function setFailure(string $code, string $msg): bool
+    public function markFailure(string $code, string $msg): bool
     {
         $status = $this->update(['failure_code' => $code, 'failure_msg' => $msg]);
         Event::dispatch(new ChargeFailure($this));
@@ -283,7 +283,7 @@ class Charge extends Model
      * @param string $transactionNo 支付渠道返回的交易流水号。
      * @return bool
      */
-    public function setPaid(string $transactionNo): bool
+    public function markPaid(string $transactionNo): bool
     {
         if ($this->paid) {
             return true;
@@ -298,7 +298,7 @@ class Charge extends Model
      * @return bool
      * @throws Exception
      */
-    public function setClose(): bool
+    public function markClose(): bool
     {
         if ($this->paid) {
             $this->update(['failure_code' => 'FAIL', 'failure_msg' => '已支付，无法撤销']);
@@ -327,7 +327,7 @@ class Charge extends Model
      * @return Refund
      * @throws Exception
      */
-    public function setRefund(string $description): Refund
+    public function markRefund(string $description): Refund
     {
         if ($this->paid) {
             /** @var Refund $refund */

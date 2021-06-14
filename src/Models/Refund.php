@@ -204,7 +204,7 @@ class Refund extends Model
      * @param string $msg
      * @return bool
      */
-    public function setFailure(string $code, string $msg): bool
+    public function markFailure(string $code, string $msg): bool
     {
         $succeed = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         $this->charge->update(['amount_refunded' => $this->charge->amount_refunded - $this->amount]);//可退款金额，减回去
@@ -218,7 +218,7 @@ class Refund extends Model
      * @param array $params
      * @return bool
      */
-    public function setRefunded(string $transactionNo, array $params = []): bool
+    public function markRefunded(string $transactionNo, array $params = []): bool
     {
         if ($this->succeed) {
             return true;

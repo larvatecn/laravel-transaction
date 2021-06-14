@@ -58,7 +58,7 @@ class CheckChargeJob implements ShouldQueue
     {
         if (!$this->charge->paid) {
             if (Carbon::parse($this->charge->time_expire)->diffInSeconds(Carbon::now()) < 0) {//过期订单直接关闭
-                $this->charge->setClose();
+                $this->charge->markClose();
             } else {//过一会再次查询
                 $this->release(2);
             }

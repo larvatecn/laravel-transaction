@@ -16,6 +16,9 @@
     "illuminate/support": "^6.0 || ^7.0 || ^8.0",
     "yansongda/pay": "^2.10"
   },
+  "require-dev": {
+    "dcat/laravel-admin": "2.*"
+  },
   "autoload": {
     "psr-4": {
       "Larva\\Transaction\\": "src"
@@ -31,5 +34,6 @@
       ]
     }
   },
+  "minimum-stability": "beta",
   "prefer-stable": true
 }

@@ -213,7 +213,7 @@ class Transfer extends Model
      * @param array $params
      * @return bool
      */
-    public function setPaid(string $transactionNo, array $params = []): bool
+    public function markPaid(string $transactionNo, array $params = []): bool
     {
         if ($this->paid) {
             return true;
@@ -229,7 +229,7 @@ class Transfer extends Model
      * @param string $msg
      * @return bool
      */
-    public function setFailure(string $code, string $msg): bool
+    public function markFailure(string $code, string $msg): bool
     {
         $res = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         Event::dispatch(new TransferFailure($this));
