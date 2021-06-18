@@ -49,7 +49,7 @@ class ChargeController extends AdminController
             $grid->column('user_id', '用户ID');
 
             $grid->column('channel', '付款渠道');
-            $grid->column('type', '付款类型');
+            $grid->column('trade_type', '付款类型');
 
             $grid->column('amount', '付款金额')->display(function ($amount) {
                 return ($amount / 100) . '元';

@@ -254,9 +254,9 @@ class Refund extends Model
             ];
             try {
                 $response = $channel->refund($order);
-                $this->setRefunded($response->transaction_id, $response->toArray());
+                $this->markRefunded($response->transaction_id, $response->toArray());
             } catch (Exception $exception) {//设置失败
-                $this->setFailure('FAIL', $exception->getMessage());
+                $this->markFailure('FAIL', $exception->getMessage());
             }
         } else if ($this->charge->channel == Transaction::CHANNEL_ALIPAY) {
             $order = [
@@ -269,9 +269,9 @@ class Refund extends Model
             ];
             try {
                 $response = $channel->refund($order);
-                $this->setRefunded($response->trade_no, $response->toArray());
+                $this->markRefunded($response->trade_no, $response->toArray());
             } catch (Exception $exception) {//设置失败
-                $this->setFailure('FAIL', $exception->getMessage());
+                $this->markFailure('FAIL', $exception->getMessage());
             }
         }
         return $this;

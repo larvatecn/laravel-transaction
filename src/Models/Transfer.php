@@ -260,9 +260,9 @@ class Transfer extends Model
                 }
                 try {
                     $response = $channel->transfer($config);
-                    $this->setPaid($response->payment_no, $response->toArray());
+                    $this->markPaid($response->payment_no, $response->toArray());
                 } catch (Exception $exception) {//设置付款失败
-                    $this->setFailure('FAIL', $exception->getMessage());
+                    $this->markFailure('FAIL', $exception->getMessage());
                 }
             } else if ($this->channel == Transaction::CHANNEL_ALIPAY) {
                 $config = [
@@ -277,9 +277,9 @@ class Transfer extends Model
                 }
                 try {
                     $response = $channel->transfer($config);
-                    $this->setPaid($response->payment_no, $response->toArray());
+                    $this->markPaid($response->payment_no, $response->toArray());
                 } catch (Exception $exception) {//设置提现失败
-                    $this->setFailure('FAIL', $exception->getMessage());
+                    $this->markFailure('FAIL', $exception->getMessage());
                 }
             }
         }

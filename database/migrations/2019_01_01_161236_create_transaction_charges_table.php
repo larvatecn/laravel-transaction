@@ -20,7 +20,7 @@ class CreateTransactionChargesTable extends Migration
             $table->boolean('refunded')->default(false)->nullable();//是否存在退款信息
             $table->boolean('reversed')->default(false)->nullable();//订单是否撤销
             $table->string('channel', 64)->nullable();//付款渠道
-            $table->string('type', 20)->nullable();//交易类型 APP PC等
+            $table->string('trade_type', 20)->nullable();//交易类型 APP PC等
             $table->morphs('order');//订单关联
             $table->unsignedInteger('amount');//订单总金额（必须大于 0),最小的货币单位
             $table->string('currency', 3)->default('CNY');//3 位 ISO 货币代码，人民币为  CNY 。

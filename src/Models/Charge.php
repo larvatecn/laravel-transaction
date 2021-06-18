@@ -41,7 +41,7 @@ use Yansongda\Supports\Collection;
  * @property boolean $reversed 已撤销
  * @property boolean $refunded 已退款
  * @property string $channel 支付渠道
- * @property string $type  支付类型
+ * @property string $trade_type  支付类型
  * @property string $subject 支付标题
  * @property string $body 支付内容
  * @property string $order_id 订单ID
@@ -105,7 +105,7 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'paid', 'refunded', 'reversed', 'type', 'channel', 'amount', 'currency', 'subject', 'body',
+        'id', 'user_id', 'paid', 'refunded', 'reversed', 'trade_type', 'channel', 'amount', 'currency', 'subject', 'body',
         'client_ip', 'extra', 'time_paid', 'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
         'failure_msg', 'metadata', 'credential', 'description'
     ];
@@ -173,8 +173,8 @@ class Charge extends Model
      */
     public function getCredential(string $channel, string $type): array
     {
-        $this->update(['channel' => $channel, 'type' => $type]);
-        $this->prePay();
+        $this->update(['channel' => $channel, 'trade_type' => $type]);
+        $this->unify();
         $this->refresh();
         return $this->credential;
     }
@@ -348,7 +348,7 @@ class Charge extends Model
      * 订单付款预下单
      * @throws InvalidGatewayException
      */
-    public function prePay()
+    public function unify()
     {
         $channel = Transaction::getChannel($this->channel);
         $order = [
@@ -373,12 +373,12 @@ class Charge extends Model
                 $order['time_expire'] = $this->time_expire;
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
-            if ($this->type == 'wap') {
+            if ($this->trade_type == 'wap') {
                 $order['return_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
             }
         }
         // 获取支付凭证
-        $credential = $channel->pay($this->type, $order);
+        $credential = $channel->pay($this->trade_type, $order);
         if ($credential instanceof Collection) {
             $credential = $credential->toArray();
         } else if ($credential instanceof RedirectResponse) {
@@ -386,7 +386,7 @@ class Charge extends Model
         } else if ($credential instanceof JsonResponse) {
             $credential = json_decode($credential->getContent(), true);
         } else if ($credential instanceof Response) {//此处判断一定要在最后
-            if ($this->channel == Transaction::CHANNEL_ALIPAY && $this->type == 'app') {
+            if ($this->channel == Transaction::CHANNEL_ALIPAY && $this->trade_type == 'app') {
                 $params = [];
                 parse_str($credential->getContent(), $params);
                 $credential = $params;
