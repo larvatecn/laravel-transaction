@@ -29,7 +29,7 @@ class ChargeObserver
      */
     public function created(Charge $charge)
     {
-        if (!empty($charge->channel) && !empty($charge->type)) {//不为空就预下单
+        if (!empty($charge->trade_channel) && !empty($charge->trade_type)) {//不为空就预下单
             $charge->unify();
         }
         if (!empty($charge->time_expire)) {//订单失效时间不为空

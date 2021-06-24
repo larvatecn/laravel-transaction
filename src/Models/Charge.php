@@ -40,10 +40,9 @@ use Yansongda\Supports\Collection;
  * @property int $user_id 用户ID
  * @property boolean $reversed 已撤销
  * @property boolean $refunded 已退款
- * @property string $channel 支付渠道
+ * @property string $trade_channel 支付渠道
  * @property string $trade_type  支付类型
  * @property string $subject 支付标题
- * @property string $body 支付内容
  * @property string $order_id 订单ID
  * @property float $amount 支付金额，单位分
  * @property string $currency 支付币种
@@ -105,7 +104,7 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'paid', 'refunded', 'reversed', 'trade_type', 'channel', 'amount', 'currency', 'subject', 'body',
+        'id', 'user_id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'amount', 'currency', 'subject', 'body',
         'client_ip', 'extra', 'time_paid', 'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
         'failure_msg', 'metadata', 'credential', 'description'
     ];
@@ -173,7 +172,7 @@ class Charge extends Model
      */
     public function getCredential(string $channel, string $type): array
     {
-        $this->update(['channel' => $channel, 'trade_type' => $type]);
+        $this->update(['trade_channel' => $channel, 'trade_type' => $type]);
         $this->unify();
         $this->refresh();
         return $this->credential;
@@ -239,15 +238,6 @@ class Charge extends Model
     }
 
     /**
-     * 获取Body
-     * @return string
-     */
-    public function getBodyAttribute(): string
-    {
-        return $this->attributes['body'] ?: $this->subject;
-    }
-
-    /**
      * 生成流水号
      * @return string
      */
@@ -306,7 +296,7 @@ class Charge extends Model
         } else if ($this->reversed) {//已经撤销
             return true;
         } else {
-            $channel = Transaction::getChannel($this->channel);
+            $channel = Transaction::getChannel($this->trade_channel);
             try {
                 if ($channel->close($this->id)) {
                     Event::dispatch(new ChargeClosed($this));
@@ -350,24 +340,24 @@ class Charge extends Model
      */
     public function unify()
     {
-        $channel = Transaction::getChannel($this->channel);
+        $channel = Transaction::getChannel($this->trade_channel);
         $order = [
             'out_trade_no' => $this->id,
         ];
 
-        if ($this->channel == Transaction::CHANNEL_WECHAT) {
+        if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order['spbill_create_ip'] = $this->client_ip;
             $order['total_fee'] = $this->amount;//总金额，单位分
-            $order['body'] = $this->body;
+            $order['body'] = $this->description;
             if ($this->time_expire) {
                 $order['time_expire'] = $this->time_expire->format('YmdHis');
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
-        } else if ($this->channel == Transaction::CHANNEL_ALIPAY) {
+        } else if ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order['total_amount'] = $this->amount / 100;//总钱数，单位元
             $order['subject'] = $this->subject;
-            if ($this->body) {
-                $order['body'] = $this->body;
+            if ($this->description) {
+                $order['body'] = $this->description;
             }
             if ($this->time_expire) {
                 $order['time_expire'] = $this->time_expire;
@@ -386,7 +376,7 @@ class Charge extends Model
         } else if ($credential instanceof JsonResponse) {
             $credential = json_decode($credential->getContent(), true);
         } else if ($credential instanceof Response) {//此处判断一定要在最后
-            if ($this->channel == Transaction::CHANNEL_ALIPAY && $this->trade_type == 'app') {
+            if ($this->trade_channel == Transaction::CHANNEL_ALIPAY && $this->trade_type == 'app') {
                 $params = [];
                 parse_str($credential->getContent(), $params);
                 $credential = $params;

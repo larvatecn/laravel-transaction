@@ -29,7 +29,7 @@ class CreateTransactionRefundsTable extends Migration
             //新资金流退款资金默认从基本账户中扣除。该参数仅在请求退款，传入该字段时返回。
             $table->json('metadata')->nullable();//元数据
             $table->json('extra')->nullable();//附加参数
-            $table->timestamp('time_succeed', 0)->nullable();//退款成功的时间，用 Unix 时间戳表示。
+            $table->timestamp('succeed_at', 0)->nullable();//退款成功的时间，用 Unix 时间戳表示。
             $table->softDeletes();
             $table->timestamps();
 

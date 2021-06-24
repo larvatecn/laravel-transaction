@@ -35,10 +35,10 @@ use Larva\Transaction\Transaction;
  * @property string $funding_source 退款资金来源
  * @property array $metadata 元数据
  * @property array $extra 渠道数据
- * @property CarbonInterface $deleted_at 软删除时间
+ * @property CarbonInterface|null $deleted_at 软删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
- * @property CarbonInterface $time_succeed 成功时间
+ * @property CarbonInterface|null $succeed_at 成功时间
  *
  * @property Charge $charge
  * @property \App\Models\User $user
@@ -88,7 +88,7 @@ class Refund extends Model
      */
     public $fillable = [
         'id', 'user_id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg', 'charge_order_id',
-        'transaction_no', 'funding_source', 'metadata', 'extra', 'time_succeed'
+        'transaction_no', 'funding_source', 'metadata', 'extra', 'succeed_at'
     ];
 
     /**
@@ -112,7 +112,7 @@ class Refund extends Model
         'created_at',
         'updated_at',
         'deleted_at',
-        'time_succeed',
+        'succeed_at',
     ];
 
     /**
@@ -223,7 +223,7 @@ class Refund extends Model
         if ($this->succeed) {
             return true;
         }
-        $this->update(['status' => self::STATUS_SUCCEEDED, 'transaction_no' => $transactionNo, 'time_succeed' => $this->freshTimestamp(), 'extra' => $params]);
+        $this->update(['status' => self::STATUS_SUCCEEDED, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $params]);
         Event::dispatch(new RefundSuccess($this));
         return $this->succeed;
     }
@@ -236,8 +236,8 @@ class Refund extends Model
     public function send(): Refund
     {
         $this->charge->update(['refunded' => true, 'amount_refunded' => $this->charge->amount_refunded + $this->amount]);
-        $channel = Transaction::getChannel($this->charge->channel);
-        if ($this->charge->channel == Transaction::CHANNEL_WECHAT) {
+        $channel = Transaction::getChannel($this->charge->trade_channel);
+        if ($this->charge->trade_channel == Transaction::CHANNEL_WECHAT) {
             $refundAccount = 'REFUND_SOURCE_RECHARGE_FUNDS';
             if ($this->funding_source == Refund::FUNDING_SOURCE_UNSETTLED) {
                 $refundAccount = 'REFUND_SOURCE_UNSETTLED_FUNDS';
@@ -258,7 +258,7 @@ class Refund extends Model
             } catch (Exception $exception) {//设置失败
                 $this->markFailure('FAIL', $exception->getMessage());
             }
-        } else if ($this->charge->channel == Transaction::CHANNEL_ALIPAY) {
+        } else if ($this->charge->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order = [
                 'out_trade_no' => $this->charge->id,
                 'trade_no' => $this->charge->transaction_no,

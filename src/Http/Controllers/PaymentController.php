@@ -51,7 +51,7 @@ class PaymentController
             if ($channel == Transaction::CHANNEL_ALIPAY) {
                 if (isset($params['trade_status']) && ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED')) {
                     $charge = Transaction::getCharge($params['out_trade_no']);
-                    $charge->setPaid($params['trade_no']);
+                    $charge->markPaid($params['trade_no']);
                     if ($charge->metadata['return_url']) {
                         $this->response->redirectTo($charge->metadata['return_url']);
                     }
