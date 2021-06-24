@@ -49,7 +49,7 @@ use Yansongda\Supports\Collection;
  * @property boolean $paid 是否支付成功
  * @property string $transaction_no 支付网关交易号
  * @property int $amount_refunded 已经退款的金额
- * @property CarbonInterface $time_expire 时间
+ * @property CarbonInterface|null $time_expire 时间
  * @property string $client_ip 客户端IP
  * @property string $failure_code 失败代码
  * @property string $failure_msg 失败消息
@@ -149,6 +149,7 @@ class Charge extends Model
             /** @var Charge $model */
             $model->id = $model->generateId();
             $model->currency = $model->currency ?: 'CNY';
+            $model->time_expire = $model->freshTimestamp()->addHours(24);//过期时间24小时
         });
     }
 
