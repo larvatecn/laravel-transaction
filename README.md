@@ -37,11 +37,11 @@ This service provider must be registered.
 事件
 ```php
 \Larva\Transaction\Events\ChargeClosed 交易已关闭
-\Larva\Transaction\Events\ChargeFailure 交易失败
+\Larva\Transaction\Events\ChargeFailed 交易失败
 \Larva\Transaction\Events\ChargeShipped 交易已支付
-\Larva\Transaction\Events\RefundFailure 退款失败事件
-\Larva\Transaction\Events\RefundSuccess 退款成功事件
-\Larva\Transaction\Events\TransferFailure 企业付款失败事件
+\Larva\Transaction\Events\RefundFailed 退款失败事件
+\Larva\Transaction\Events\RefundSucceed 退款成功事件
+\Larva\Transaction\Events\TransferFailed 企业付款失败事件
 \Larva\Transaction\Events\TransferShipped 企业付款成功事件
 ```
 
@@ -71,15 +71,15 @@ class Order extends Model {
     /**
      * 设置交易成功
      */
-    public function setSucceeded()
+    public function markSucceeded()
     {
-        $this->update(['pay_channel' => $this->charge->channel, 'status' => static::STATUS_PAY_SUCCEEDED, 'pay_succeeded_at' => $this->freshTimestamp()]);
+        $this->update(['pay_channel' => $this->charge->trade_channel, 'status' => static::STATUS_PAY_SUCCEEDED, 'pay_succeeded_at' => $this->freshTimestamp()]);
     }
 
     /**
      * 设置交易失败
      */
-    public function setFailure()
+    public function markFailed()
     {
         $this->update(['status' => static::STATUS_FAILED]);
     }
@@ -107,6 +107,3 @@ class Order extends Model {
     }
 }
 ```
-
-
-
