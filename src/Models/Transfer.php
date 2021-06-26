@@ -262,7 +262,7 @@ class Transfer extends Model
                     $response = $channel->transfer($config);
                     $this->markPaid($response->payment_no, $response->toArray());
                 } catch (Exception $exception) {//设置付款失败
-                    $this->markFailure('FAIL', $exception->getMessage());
+                    $this->markFailed('FAIL', $exception->getMessage());
                 }
             } else if ($this->channel == Transaction::CHANNEL_ALIPAY) {
                 $config = [
@@ -279,7 +279,7 @@ class Transfer extends Model
                     $response = $channel->transfer($config);
                     $this->markPaid($response->payment_no, $response->toArray());
                 } catch (Exception $exception) {//设置提现失败
-                    $this->markFailure('FAIL', $exception->getMessage());
+                    $this->markFailed('FAIL', $exception->getMessage());
                 }
             }
         }

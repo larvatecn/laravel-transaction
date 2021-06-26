@@ -250,7 +250,7 @@ class Charge extends Model
             }
             $i++;
             $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where('id', '=', $id)->exists();
+            $row = static::query()->where($this->primaryKey, '=', $id)->exists();
         } while ($row);
         return $id;
     }
