@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
-use Larva\Transaction\Events\TransferFailure;
+use Larva\Transaction\Events\TransferFailed;
 use Larva\Transaction\Events\TransferShipped;
 use Larva\Transaction\Transaction;
 
@@ -41,6 +41,7 @@ use Larva\Transaction\Transaction;
  * @property CarbonInterface $deleted_at 软删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
+ *
  * @property-read boolean $scheduled
  *
  * @property Model $order
@@ -118,9 +119,8 @@ class Transfer extends Model
      *
      * @return void
      */
-    public static function boot()
+    public static function booted()
     {
-        parent::boot();
         static::creating(function ($model) {
             /** @var Transfer $model */
             $model->id = $model->generateId();
@@ -229,10 +229,10 @@ class Transfer extends Model
      * @param string $msg
      * @return bool
      */
-    public function markFailure(string $code, string $msg): bool
+    public function markFailed(string $code, string $msg): bool
     {
         $res = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
-        Event::dispatch(new TransferFailure($this));
+        Event::dispatch(new TransferFailed($this));
         return $res;
     }
 

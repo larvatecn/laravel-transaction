@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Larva\Transaction\Events\ChargeClosed;
-use Larva\Transaction\Events\ChargeFailure;
+use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeShipped;
 use Larva\Transaction\Transaction;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -142,9 +142,8 @@ class Charge extends Model
      *
      * @return void
      */
-    public static function boot()
+    public static function booted()
     {
-        parent::boot();
         static::creating(function ($model) {
             /** @var Charge $model */
             $model->id = $model->generateId();
@@ -262,10 +261,10 @@ class Charge extends Model
      * @param string $msg
      * @return bool
      */
-    public function markFailure(string $code, string $msg): bool
+    public function markFailed(string $code, string $msg): bool
     {
         $status = $this->update(['failure_code' => $code, 'failure_msg' => $msg]);
-        Event::dispatch(new ChargeFailure($this));
+        Event::dispatch(new ChargeFailed($this));
         return $status;
     }
 
@@ -289,7 +288,7 @@ class Charge extends Model
      * @return bool
      * @throws Exception
      */
-    public function markClose(): bool
+    public function markClosed(): bool
     {
         if ($this->paid) {
             $this->update(['failure_code' => 'FAIL', 'failure_msg' => '已支付，无法撤销']);

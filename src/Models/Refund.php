@@ -16,8 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
-use Larva\Transaction\Events\RefundFailure;
-use Larva\Transaction\Events\RefundSuccess;
+use Larva\Transaction\Events\RefundFailed;
+use Larva\Transaction\Events\RefundSucceed;
 use Larva\Transaction\Transaction;
 
 /**
@@ -120,9 +120,8 @@ class Refund extends Model
      *
      * @return void
      */
-    public static function boot()
+    public static function booted()
     {
-        parent::boot();
         static::creating(function ($model) {
             /** @var Refund $model */
             $model->id = $model->generateId();
@@ -204,16 +203,16 @@ class Refund extends Model
      * @param string $msg
      * @return bool
      */
-    public function markFailure(string $code, string $msg): bool
+    public function markFailed(string $code, string $msg): bool
     {
         $succeed = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
         $this->charge->update(['amount_refunded' => $this->charge->amount_refunded - $this->amount]);//可退款金额，减回去
-        Event::dispatch(new RefundFailure($this));
+        Event::dispatch(new RefundFailed($this));
         return $succeed;
     }
 
     /**
-     * 设置退款成功
+     * 设置退款完成
      * @param string $transactionNo
      * @param array $params
      * @return bool
@@ -224,7 +223,7 @@ class Refund extends Model
             return true;
         }
         $this->update(['status' => self::STATUS_SUCCEEDED, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $params]);
-        Event::dispatch(new RefundSuccess($this));
+        Event::dispatch(new RefundSucceed($this));
         return $this->succeed;
     }
 

@@ -37,10 +37,6 @@ class ChargeController extends AdminController
         return Grid::make(new Charge(), function (Grid $grid) {
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id');
-                //顶部筛选
-                $filter->scope('pending', '待付款')->where('status', Recharge::STATUS_PENDING);
-                $filter->scope('succeeded', '充值成功')->where('status', Recharge::STATUS_SUCCEEDED);
-                $filter->scope('failure', '充值失败')->where('status', Recharge::STATUS_FAILED);
             });
             $grid->quickSearch(['id']);
             $grid->model()->orderBy('id', 'desc');
@@ -55,7 +51,7 @@ class ChargeController extends AdminController
                 return ($amount / 100) . '元';
             });
             $grid->column('score', '积分数量');
-            $grid->column('status', '状态')->using(Recharge::getStatusLabels())->dot(Recharge::getStatusDots(), 'info');
+            $grid->column('status', '状态')->using(Charge::getStatusLabels())->dot(Charge::getStatusDots(), 'info');
             $grid->column('client_ip', '客户端IP');
             $grid->column('succeeded_at', '成功时间');
 

@@ -17,7 +17,7 @@ use Larva\Transaction\Models\Refund;
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
-class RefundFailure
+class RefundFailed
 {
     use SerializesModels;
 

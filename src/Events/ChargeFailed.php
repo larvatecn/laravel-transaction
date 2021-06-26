@@ -17,7 +17,7 @@ use Larva\Transaction\Models\Charge;
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
-class ChargeFailure
+class ChargeFailed
 {
     use SerializesModels;
 
