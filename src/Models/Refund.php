@@ -23,26 +23,23 @@ use Larva\Transaction\Transaction;
 /**
  * 退款处理模型
  * @property string $id
- * @property int $user_id
  * @property int $charge_id
  * @property int $amount
  * @property string $status
  * @property string $description 退款描述
  * @property string $failure_code
  * @property string $failure_msg
- * @property string $charge_order_id
  * @property string $transaction_no
  * @property string $funding_source 退款资金来源
  * @property array $metadata 元数据
  * @property array $extra 渠道数据
- * @property CarbonInterface|null $deleted_at 软删除时间
+ * @property CarbonInterface|null $succeed_at 成功时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
- * @property CarbonInterface|null $succeed_at 成功时间
+ * @property CarbonInterface|null $deleted_at 软删除时间
  *
- * @property Charge $charge
- * @property \App\Models\User $user
  * @property-read boolean $succeed
+ * @property Charge $charge
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */

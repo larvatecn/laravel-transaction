@@ -11,7 +11,6 @@ namespace Larva\Transaction\Observers;
 
 use Larva\Transaction\Jobs\CheckChargeJob;
 use Larva\Transaction\Models\Charge;
-use Yansongda\Pay\Exceptions\InvalidGatewayException;
 
 /**
  * 支付模型观察者

@@ -24,7 +24,6 @@ class CreateTransactionChargesTable extends Migration
             $table->unsignedInteger('total_amount')->comment('订单总金额');
             $table->string('currency', 3)->default('CNY')->comment('货币类型');
             $table->string('state', 32)->nullable()->comment('交易状态');
-            $table->string('state_desc', 256)->nullable()->comment('交易状态描述');
             $table->ipAddress('client_ip')->nullable()->comment('用户的客户端IP');
             $table->json('payer')->nullable()->comment('支付者信息');
             $table->json('credential')->nullable()->comment('客户端支付凭证');

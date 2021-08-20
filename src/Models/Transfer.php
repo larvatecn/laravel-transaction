@@ -45,7 +45,6 @@ use Larva\Transaction\Transaction;
  * @property-read boolean $scheduled
  *
  * @property Model $order
- * @property \App\Models\User $user
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */

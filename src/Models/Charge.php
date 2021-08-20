@@ -11,20 +11,15 @@ namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
 use DateTimeInterface;
-use Exception;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Log;
 use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeShipped;
-use Larva\Transaction\Transaction;
 
 /**
  * 支付模型
@@ -39,7 +34,6 @@ use Larva\Transaction\Transaction;
  * @property int $total_amount 支付金额，单位分
  * @property string $currency 支付币种
  * @property string $state 交易状态
- * @property string $state_desc 交易状态描述
  * @property string $client_ip 客户端IP
  * @property array $payer 支付者信息
  * @property array $credential 客户端支付凭证
@@ -49,6 +43,10 @@ use Larva\Transaction\Transaction;
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface|null $updated_at 更新时间
  * @property CarbonInterface|null $deleted_at 软删除时间
+ *
+ * @property-read bool $refunded 是否有退款
+ * @property-read bool $reversed 是否撤销
+ * @property-read string $stateDesc
  * @property Model $order 触发该收款的订单模型
  * @property Refund $refunds 退款实例
  *
@@ -57,6 +55,15 @@ use Larva\Transaction\Transaction;
 class Charge extends Model
 {
     use SoftDeletes;
+
+    public const STATE_SUCCESS = 'SUCCESS';
+    public const STATE_REFUND = 'REFUND';
+    public const STATE_NOTPAY = 'NOTPAY';
+    public const STATE_CLOSED = 'CLOSED';
+    public const STATE_REVOKED = 'REVOKED';
+    public const STATE_USERPAYING = 'USERPAYING';
+    public const STATE_PAYERROR = 'PAYERROR';
+    public const STATE_ACCEPT = 'ACCEPT';
 
     /**
      * The table associated with the model.
@@ -87,7 +94,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
-        'state', 'state_desc', 'client_ip', 'payer', 'credential', 'failure', 'expired_at'
+        'state', 'client_ip', 'payer', 'credential', 'failure', 'expired_at'
     ];
 
     /**
@@ -105,7 +112,6 @@ class Charge extends Model
         'total_amount' => 'int',
         'currency' => 'string',
         'state' => 'string',
-        'state_desc' => 'string',
         'client_ip' => 'string',
         'payer' => 'array',
         'credential' => 'array',
@@ -122,6 +128,21 @@ class Charge extends Model
     ];
 
     /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $stateMaps = [
+        self::STATE_SUCCESS => '支付成功',
+        self::STATE_REFUND => '转入退款',
+        self::STATE_NOTPAY => '未支付',
+        self::STATE_CLOSED => '已关闭',
+        self::STATE_REVOKED => '已撤销',
+        self::STATE_USERPAYING => '用户支付中',
+        self::STATE_PAYERROR => '支付失败',
+        self::STATE_ACCEPT => '已接收，等待扣款',
+    ];
+
+    /**
      * The "booting" method of the model.
      *
      * @return void
@@ -133,7 +154,17 @@ class Charge extends Model
             $model->id = $model->generateId();
             $model->currency = $model->currency ?: 'CNY';
             $model->expired_at = $model->expired_at ?? $model->freshTimestamp()->addHours(24);//过期时间24小时
+            $model->state = static::STATE_NOTPAY;
         });
+    }
+
+    /**
+     * 获取 State Label
+     * @return string[]
+     */
+    public static function getStateMaps(): array
+    {
+        return static::$stateMaps;
     }
 
     /**
@@ -166,10 +197,105 @@ class Charge extends Model
     }
 
     /**
+     * 是否有退款
+     * @return bool
+     */
+    public function getRefundedAttribute(): bool
+    {
+        return $this->state == static::STATE_REFUND;
+    }
+
+    /**
+     * 已退款钱数
+     * @return int|mixed
+     */
+    public function getRefundedAmountAttribute()
+    {
+        if ($this->refunded) {
+            return $this->refunds()->sum('');
+        }
+        return 0;
+    }
+
+    /**
+     * 是否已经撤销
+     * @return bool
+     */
+    public function getReversedAttribute(): bool
+    {
+        return $this->state == static::STATE_REVOKED;
+    }
+
+    /**
+     * 状态描述
+     * @return mixed|string
+     */
+    public function getStateDescAttribute()
+    {
+        return static::$stateMaps[$this->state] ?? '未知状态';
+    }
+
+    /**
+     * 发起退款
+     * @param string $description 退款描述
+     * @return Refund
+     */
+    public function refund(string $description): Refund
+    {
+        return $this->refunds()->create([
+            'description' => $description
+        ]);
+    }
+
+    /**
+     * 撤销交易
+     */
+    public function revoke()
+    {
+
+    }
+
+    /**
+     * 关闭交易
+     */
+    public function close()
+    {
+
+    }
+
+    /**
+     * 设置支付错误
+     * @param array $failure
+     * @return bool
+     */
+    public function markFailed(array $failure): bool
+    {
+        $status = $this->saveQuietly(['state' => static::STATE_PAYERROR, 'failure' => $failure]);
+        Event::dispatch(new ChargeFailed($this));
+        return $status;
+    }
+
+    /**
+     * 设置已付款状态
+     * @param string $transactionNo 支付渠道返回的交易流水号。
+     * @return bool
+     */
+    public function markSucceed(string $transactionNo): bool
+    {
+        $state = $this->saveQuietly([
+            'transaction_no' => $transactionNo,
+            'succeed_at' => $this->freshTimestamp(),
+            'state' => static::STATE_SUCCESS,
+        ]);
+        Event::dispatch(new ChargeShipped($this));
+        return $state;
+    }
+
+    /**
      * 生成流水号
      * @return string
      */
-    public function generateId(): string
+    protected function generateId(): string
     {
         $i = rand(0, 9999);
         do {
@@ -181,40 +307,5 @@ class Charge extends Model
             $row = static::query()->where($this->primaryKey, '=', $id)->exists();
         } while ($row);
         return $id;
-    }
-
-    /**
-     * 设置支付错误
-     * @param array $failure
-     * @return bool
-     */
-    public function markFailed(array $failure): bool
-    {
-        $status = $this->saveQuietly(['failure' => $failure]);
-        Event::dispatch(new ChargeFailed($this));
-        return $status;
-    }
-
-    /**
-     * 设置已付款状态
-     * @param string $transactionNo 支付渠道返回的交易流水号。
-     * @return bool
-     */
-    public function markPaid(string $transactionNo): bool
-    {
-        $paid = $this->update(['transaction_no' => $transactionNo, 'time_paid' => $this->freshTimestamp()]);
-        Event::dispatch(new ChargeShipped($this));
-        return $paid;
-    }
-
-    /**
-     * 发起退款
-     * @param string $description 退款描述
-     * @return Refund
-     * @throws Exception
-     */
-    public function refund(string $description): Refund
-    {
-
     }
 }

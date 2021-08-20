@@ -9,20 +9,13 @@ declare (strict_types = 1);
 
 namespace Larva\Transaction;
 
-use Exception;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Route;
-use Larva\Transaction\Models\Charge;
-use Larva\Transaction\Models\Refund;
-use Larva\Transaction\Models\Transfer;
-use Yansongda\Pay\Pay;
-use Yansongda\Pay\Provider\AbstractProvider;
 use Yansongda\Pay\Provider\Alipay;
 use Yansongda\Pay\Provider\Wechat;
 
 /**
- * Class Transaction
- *
+ * 交易助手
  * @author Tongle Xu <xutongle@gmail.com>
  */
 class Transaction extends Facade
@@ -38,7 +31,7 @@ class Transaction extends Facade
      */
     public static function getFacadeAccessor(): string
     {
-        return 'pay.alipay';
+        return 'transaction.alipay';
     }
 
     /**
@@ -48,7 +41,7 @@ class Transaction extends Facade
      */
     public static function alipay(): Alipay
     {
-        return app('pay.alipay');
+        return app('transaction.alipay');
     }
 
     /**
@@ -58,7 +51,7 @@ class Transaction extends Facade
      */
     public static function wechat(): Wechat
     {
-        return app('pay.wechat');
+        return app('transaction.wechat');
     }
 
     /**
