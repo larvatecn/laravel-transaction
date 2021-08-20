@@ -15,7 +15,7 @@ class CreateTransactionTransferTable extends Migration
     public function up()
     {
         Schema::create('transaction_transfer', function (Blueprint $table) {
-            $table->string('id',64)->unique();
+            $table->string('id',64)->unique()->comment('交易流水号');
             $table->string('trade_channel',64)->comment('支付渠道');
             $table->string('status',15)->default(Transfer::STATUS_SCHEDULED)->nullable()->comment('状态');
             $table->morphs('order');//付款单关联

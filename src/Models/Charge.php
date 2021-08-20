@@ -24,45 +24,30 @@ use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeShipped;
 use Larva\Transaction\Transaction;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * 支付模型
- * @property string $id
- * @property int $user_id 用户ID
- * @property boolean $reversed 已撤销
- * @property boolean $refunded 已退款
+ * @property string $id 付款流水号
  * @property string $trade_channel 支付渠道
  * @property string $trade_type  支付类型
- * @property string $subject 支付标题
- * @property string $order_id 订单ID
- * @property float $amount 支付金额，单位分
- * @property string $currency 支付币种
- * @property boolean $paid 是否支付成功
  * @property string $transaction_no 支付网关交易号
- * @property int $amount_refunded 已经退款的金额
- * @property CarbonInterface|null $time_expire 时间
- * @property string $client_ip 客户端IP
- * @property string $failure_code 失败代码
- * @property string $failure_msg 失败消息
+ * @property string $order_id 订单ID
+ * @property string $order_type 订单类型
+ * @property string $subject 支付标题
  * @property string $description 描述
+ * @property int $total_amount 支付金额，单位分
+ * @property string $currency 支付币种
+ * @property string $state 交易状态
+ * @property string $state_desc 交易状态描述
+ * @property string $client_ip 客户端IP
+ * @property array $payer 支付者信息
  * @property array $credential 客户端支付凭证
- * @property array $metadata 元数据
- * @property array $extra 渠道数据
- *
- * @property \App\Models\User $user
- * @property Model $order 触发该收款的订单模型
- * @property Refund $refunds
- *
- * @property CarbonInterface $time_paid 付款时间
- * @property CarbonInterface $deleted_at 软删除时间
+ * @property CarbonInterface|null $expired_at 过期时间
  * @property CarbonInterface $created_at 创建时间
- * @property CarbonInterface $updated_at 更新时间
- *
- * @property-read int $refundable 可退款金额
- * @property-read boolean $allowRefund 是否可以退款
+ * @property CarbonInterface|null $updated_at 更新时间
+ * @property CarbonInterface|null $deleted_at 软删除时间
+ * @property Model $order 触发该收款的订单模型
+ * @property Refund $refunds 退款实例
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
@@ -98,9 +83,8 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'amount', 'currency', 'subject', 'body',
-        'client_ip', 'extra', 'time_paid', 'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
-        'failure_msg', 'metadata', 'credential', 'description'
+        'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
+        'state', 'state_desc', 'client_ip', 'payer', 'credential', 'expired_at'
     ];
 
     /**
@@ -109,13 +93,19 @@ class Charge extends Model
      * @var array
      */
     protected $casts = [
-        'amount' => 'int',
-        'paid' => 'boolean',
-        'refunded' => 'boolean',
-        'reversed' => 'boolean',
-        'extra' => 'array',
-        'credential' => 'array',
-        'metadata' => 'array',
+        'id' => 'string',
+        'trade_channel' => 'string',
+        'trade_type' => 'string',
+        'transaction_no' => 'string',
+        'subject' => 'string',
+        'description' => 'string',
+        'total_amount' => 'int',
+        'currency' => 'string',
+        'state' => 'string',
+        'state_desc' => 'string',
+        'client_ip' => 'string',
+        'payer' => 'array',
+        'credential' => 'array'
     ];
 
     /**
@@ -124,11 +114,7 @@ class Charge extends Model
      * @var array
      */
     protected $dates = [
-        'created_at',
-        'updated_at',
-        'deleted_at',
-        'time_paid',
-        'time_expire',
+        'expired_at', 'created_at', 'updated_at', 'deleted_at'
     ];
 
     /**
@@ -138,11 +124,11 @@ class Charge extends Model
      */
     public static function booted()
     {
-        static::creating(function ($model) {
+        static::creating(function (Charge $model) {
             /** @var Charge $model */
             $model->id = $model->generateId();
             $model->currency = $model->currency ?: 'CNY';
-            $model->time_expire = $model->freshTimestamp()->addHours(24);//过期时间24小时
+            $model->expired_at = $model->expired_at ?? $model->freshTimestamp()->addHours(24);//过期时间24小时
         });
     }
 
@@ -158,47 +144,12 @@ class Charge extends Model
     }
 
     /**
-     * 获取指定渠道的支付凭证
-     * @param string $channel
-     * @param string $type
-     * @return array
-     * @throws InvalidGatewayException
-     */
-    public function getCredential(string $channel, string $type): array
-    {
-        $this->update(['trade_channel' => $channel, 'trade_type' => $type]);
-        $this->unify();
-        $this->refresh();
-        return $this->credential;
-    }
-
-    /**
-     * 查询已付款的
-     * @param Builder $query
-     * @return Builder
-     */
-    public function scopePaid(Builder $query): Builder
-    {
-        return $query->where('paid', true);
-    }
-
-    /**
-     * 多态关联
+     * 关联订单
      * @return MorphTo
      */
-    public function source(): MorphTo
+    public function order(): MorphTo
     {
         return $this->morphTo();
-    }
-
-    /**
-     * 获取用户关联
-     *
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(config('auth.providers.' . config('auth.guards.web.provider') . '.model'));
     }
 
     /**
@@ -208,27 +159,6 @@ class Charge extends Model
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class);
-    }
-
-    /**
-     * 是否还可以继续退款
-     * @return boolean
-     */
-    public function getAllowRefundAttribute(): bool
-    {
-        if ($this->paid && $this->refundable > 0) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 获取可退款钱数
-     * @return float|int
-     */
-    public function getRefundableAttribute()
-    {
-        return $this->amount - $this->amount_refunded;
     }
 
     /**
@@ -257,7 +187,7 @@ class Charge extends Model
      */
     public function markFailed(string $code, string $msg): bool
     {
-        $status = $this->update(['failure_code' => $code, 'failure_msg' => $msg]);
+        $status = $this->update(['state' => $code, 'state_desc' => $msg]);
         Event::dispatch(new ChargeFailed($this));
         return $status;
     }
@@ -269,40 +199,9 @@ class Charge extends Model
      */
     public function markPaid(string $transactionNo): bool
     {
-        if ($this->paid) {
-            return true;
-        }
-        $paid = $this->update(['transaction_no' => $transactionNo, 'time_paid' => $this->freshTimestamp(), 'paid' => true]);
+        $paid = $this->update(['transaction_no' => $transactionNo, 'time_paid' => $this->freshTimestamp()]);
         Event::dispatch(new ChargeShipped($this));
         return $paid;
-    }
-
-    /**
-     * 关闭关闭该笔收单
-     * @return bool
-     * @throws Exception
-     */
-    public function markClosed(): bool
-    {
-        if ($this->paid) {
-            $this->update(['failure_code' => 'FAIL', 'failure_msg' => '已支付，无法撤销']);
-            return false;
-        } else if ($this->reversed) {//已经撤销
-            return true;
-        } else {
-            $channel = Transaction::getChannel($this->trade_channel);
-            try {
-                if ($channel->close($this->id)) {
-                    Event::dispatch(new ChargeClosed($this));
-                    $this->update(['reversed' => true, 'credential' => []]);
-                    return true;
-                }
-                return false;
-            } catch (GatewayException | InvalidArgumentException | InvalidConfigException | InvalidSignException $e) {
-                Log::error($e->getMessage());
-            }
-        }
-        return false;
     }
 
     /**
@@ -311,73 +210,8 @@ class Charge extends Model
      * @return Refund
      * @throws Exception
      */
-    public function markRefund(string $description): Refund
+    public function refund(string $description): Refund
     {
-        if ($this->paid) {
-            /** @var Refund $refund */
-            $refund = $this->refunds()->create([
-                'user_id' => $this->user_id,
-                'amount' => $this->amount,
-                'description' => $description,
-                'charge_id' => $this->id,
-                'charge_order_id' => $this->order,
-            ]);
-            $this->update(['refunded' => true]);
-            return $refund;
-        }
-        throw new Exception ('Not paid, no refund.');
-    }
 
-    /**
-     * 订单付款预下单
-     * @throws InvalidGatewayException
-     */
-    public function unify()
-    {
-        $channel = Transaction::getChannel($this->trade_channel);
-        $order = [
-            'out_trade_no' => $this->id,
-        ];
-
-        if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
-            $order['spbill_create_ip'] = $this->client_ip;
-            $order['total_fee'] = $this->amount;//总金额，单位分
-            $order['body'] = $this->description;
-            if ($this->time_expire) {
-                $order['time_expire'] = $this->time_expire->format('YmdHis');
-            }
-            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
-        } else if ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
-            $order['total_amount'] = $this->amount / 100;//总钱数，单位元
-            $order['subject'] = $this->subject;
-            if ($this->description) {
-                $order['body'] = $this->description;
-            }
-            if ($this->time_expire) {
-                $order['time_expire'] = $this->time_expire;
-            }
-            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
-            if ($this->trade_type == 'wap') {
-                $order['return_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
-            }
-        }
-        // 获取支付凭证
-        $credential = $channel->pay($this->trade_type, $order);
-        if ($credential instanceof Collection) {
-            $credential = $credential->toArray();
-        } else if ($credential instanceof RedirectResponse) {
-            $credential = ['url' => $credential->getTargetUrl()];
-        } else if ($credential instanceof JsonResponse) {
-            $credential = json_decode($credential->getContent(), true);
-        } else if ($credential instanceof Response) {//此处判断一定要在最后
-            if ($this->trade_channel == Transaction::CHANNEL_ALIPAY && $this->trade_type == 'app') {
-                $params = [];
-                parse_str($credential->getContent(), $params);
-                $credential = $params;
-            } else {//WEB H5
-                $credential = ['html' => $credential->getContent()];
-            }
-        }
-        $this->update(['credential' => $credential]);
     }
 }
