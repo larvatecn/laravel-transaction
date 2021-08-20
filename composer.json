@@ -5,7 +5,7 @@
   "type": "library",
   "license": "MIT",
   "require": {
-    "php": "^7.3|^8.0",
+    "php": "^7.4|^8.0",
     "ext-bcmath": "*",
     "ext-json": "*",
     "illuminate/bus": "^6.0 || ^7.0 || ^8.0",
@@ -14,10 +14,11 @@
     "illuminate/queue": "^6.0 || ^7.0 || ^8.0",
     "illuminate/database": "^6.0 || ^7.0 || ^8.0",
     "illuminate/support": "^6.0 || ^7.0 || ^8.0",
-    "yansongda/pay": "^2.10"
+    "yansongda/pay": "^3.0"
   },
   "require-dev": {
-    "dcat/laravel-admin": "2.*"
+    "dcat/laravel-admin": "2.*",
+    "laravel/framework": "^8.40"
   },
   "autoload": {
     "psr-4": {
@@ -26,7 +27,7 @@
   },
   "extra": {
     "branch-alias": {
-      "dev-master": "1.0-dev"
+      "dev-master": "2.0-dev"
     },
     "laravel": {
       "providers": [
