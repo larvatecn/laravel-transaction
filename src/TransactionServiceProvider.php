@@ -5,11 +5,12 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types = 1);
+declare (strict_types=1);
 
 namespace Larva\Transaction;
 
 use Illuminate\Support\ServiceProvider;
+use Yansongda\Pay\Pay;
 
 /**
  * Class TransactionServiceProvider
@@ -29,7 +30,7 @@ class TransactionServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
             $this->publishes([
-                __DIR__.'/../resources/views' => base_path('resources/views/vendor/transaction'),
+                __DIR__ . '/../resources/views' => base_path('resources/views/vendor/transaction'),
             ], 'transaction-views');
             $this->publishes([
                 __DIR__ . '/../config/transaction.php' => config_path('transaction.php'),],
@@ -49,6 +50,26 @@ class TransactionServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->mergeConfigFrom(dirname(__DIR__) . '/config/transaction.php', 'transaction');
 
+        Pay::config(config('transaction'));
+
+        $this->app->singleton('transaction.alipay', function () {
+            return Pay::alipay();
+        });
+
+        $this->app->singleton('transaction.wechat', function () {
+            return Pay::wechat();
+        });
+    }
+
+    /**
+     * Get services.
+     *
+     * @return array
+     */
+    public function provides(): array
+    {
+        return ['transaction.alipay', 'transaction.wechat'];
     }
 }

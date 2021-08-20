@@ -10,22 +10,56 @@ declare (strict_types = 1);
 namespace Larva\Transaction;
 
 use Exception;
+use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Route;
 use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Models\Refund;
 use Larva\Transaction\Models\Transfer;
 use Yansongda\Pay\Pay;
+use Yansongda\Pay\Provider\AbstractProvider;
+use Yansongda\Pay\Provider\Alipay;
+use Yansongda\Pay\Provider\Wechat;
 
 /**
  * Class Transaction
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
-class Transaction
+class Transaction extends Facade
 {
     //支持的交易通道
     const CHANNEL_WECHAT = 'wechat';
     const CHANNEL_ALIPAY = 'alipay';
+
+    /**
+     * Return the facade accessor.
+     *
+     * @return string
+     */
+    public static function getFacadeAccessor(): string
+    {
+        return 'pay.alipay';
+    }
+
+    /**
+     * Return the facade accessor.
+     *
+     * @return Alipay
+     */
+    public static function alipay(): Alipay
+    {
+        return app('pay.alipay');
+    }
+
+    /**
+     * Return the facade accessor.
+     *
+     * @return Wechat
+     */
+    public static function wechat(): Wechat
+    {
+        return app('pay.wechat');
+    }
 
     /**
      * Binds the Transaction routes into the controller.
@@ -34,7 +68,7 @@ class Transaction
      * @param array $options
      * @return void
      */
-    public static function routes($callback = null, array $options = [])
+    public static function routes(callable $callback = null, array $options = [])
     {
         $callback = $callback ?: function ($router) {
             $router->all();
@@ -51,52 +85,4 @@ class Transaction
             $callback(new RouteRegistrar($router));
         });
     }
-
-    /**
-     * 获取交易网关
-     * @param string $channel
-     * @return \Yansongda\Pay\Gateways\Alipay|\Yansongda\Pay\Gateways\Wechat
-     * @throws Exception
-     */
-    public static function getChannel(string $channel)
-    {
-        if ($channel == static::CHANNEL_WECHAT) {
-            return Pay::wechat(config('transaction.wechat'));
-        } else if ($channel == static::CHANNEL_ALIPAY) {
-            return Pay::alipay(config('transaction.alipay'));
-        } else {
-            throw new Exception ('The channel does not exist.');
-        }
-    }
-
-    /**
-     * 获取付款单
-     * @param string $id
-     * @return Charge|null
-     */
-    public static function getCharge(string $id): ?Charge
-    {
-        return Charge::where('id', $id)->first();
-    }
-
-    /**
-     * 获取退款单
-     * @param string $id
-     * @return Refund|null
-     */
-    public static function getRefund(string $id): ?Refund
-    {
-        return Refund::where('id', $id)->first();
-    }
-
-    /**
-     * 获取企业付款
-     * @param string $id
-     * @return Transfer|null
-     */
-    public static function getTransfer(string $id): ?Transfer
-    {
-        return Transfer::where('id', $id)->first();
-    }
-
 }

@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeShipped;
@@ -42,6 +43,8 @@ use Larva\Transaction\Transaction;
  * @property string $client_ip 客户端IP
  * @property array $payer 支付者信息
  * @property array $credential 客户端支付凭证
+ * @property Failure $failure 错误信息
+ * @property CarbonInterface|null $succeed_at 支付完成时间
  * @property CarbonInterface|null $expired_at 过期时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface|null $updated_at 更新时间
@@ -84,7 +87,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
-        'state', 'state_desc', 'client_ip', 'payer', 'credential', 'expired_at'
+        'state', 'state_desc', 'client_ip', 'payer', 'credential', 'failure', 'expired_at'
     ];
 
     /**
@@ -105,7 +108,8 @@ class Charge extends Model
         'state_desc' => 'string',
         'client_ip' => 'string',
         'payer' => 'array',
-        'credential' => 'array'
+        'credential' => 'array',
+        'failure' => Failure::class
     ];
 
     /**
@@ -114,7 +118,7 @@ class Charge extends Model
      * @var array
      */
     protected $dates = [
-        'expired_at', 'created_at', 'updated_at', 'deleted_at'
+        'succeed_at', 'expired_at', 'created_at', 'updated_at', 'deleted_at'
     ];
 
     /**
@@ -181,13 +185,12 @@ class Charge extends Model
 
     /**
      * 设置支付错误
-     * @param string $code
-     * @param string $msg
+     * @param array $failure
      * @return bool
      */
-    public function markFailed(string $code, string $msg): bool
+    public function markFailed(array $failure): bool
     {
-        $status = $this->update(['state' => $code, 'state_desc' => $msg]);
+        $status = $this->saveQuietly(['failure' => $failure]);
         Event::dispatch(new ChargeFailed($this));
         return $status;
     }

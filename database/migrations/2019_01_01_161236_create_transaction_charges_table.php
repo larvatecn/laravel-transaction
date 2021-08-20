@@ -28,7 +28,9 @@ class CreateTransactionChargesTable extends Migration
             $table->ipAddress('client_ip')->nullable()->comment('用户的客户端IP');
             $table->json('payer')->nullable()->comment('支付者信息');
             $table->json('credential')->nullable()->comment('客户端支付凭证');
+            $table->json('failure')->nullable()->comment('错误信息');
             $table->timestamp('expired_at')->nullable()->comment('交易结束时间');
+            $table->timestamp('succeed_at', 0)->nullable()->comment('支付完成时间');
             $table->timestamps();
             $table->softDeletes();
         });

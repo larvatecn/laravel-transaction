@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Larva\Transaction\Transaction;
 use Symfony\Component\HttpFoundation\Response;
-use Yansongda\Pay\Exceptions\InvalidArgumentException;
 
 /**
  * 通知回调
@@ -27,7 +26,6 @@ class NotifyController
      * @param Request $request
      * @param string $channel 回调的渠道
      * @return Response
-     * @throws InvalidArgumentException
      */
     public function charge(Request $request, string $channel): Response
     {
@@ -59,7 +57,6 @@ class NotifyController
      * @param Request $request
      * @param string $channel 回调的渠道
      * @return Response
-     * @throws InvalidArgumentException
      */
     public function refund(Request $request, string $channel): Response
     {
