@@ -9,7 +9,6 @@ declare (strict_types = 1);
 
 namespace Larva\Transaction\Observers;
 
-use Larva\Transaction\Jobs\CheckChargeJob;
 use Larva\Transaction\Models\Charge;
 
 /**
@@ -24,15 +23,11 @@ class ChargeObserver
      *
      * @param Charge $charge
      * @return void
-     * @throws InvalidGatewayException
      */
     public function created(Charge $charge)
     {
         if (!empty($charge->trade_channel) && !empty($charge->trade_type)) {//不为空就预下单
             $charge->unify();
-        }
-        if (!empty($charge->time_expire)) {//订单失效时间不为空
-            CheckChargeJob::dispatch($charge)->delay(2);
         }
     }
 }

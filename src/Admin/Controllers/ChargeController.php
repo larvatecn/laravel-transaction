@@ -51,7 +51,7 @@ class ChargeController extends AdminController
                 return ($amount / 100) . '元';
             });
             $grid->column('score', '积分数量');
-            $grid->column('status', '状态')->using(Charge::getStatusLabels())->dot(Charge::getStatusDots(), 'info');
+            $grid->column('status', '状态')->using(Charge::getStateMaps())->dot(Charge::getStatusDots(), 'info');
             $grid->column('client_ip', '客户端IP');
             $grid->column('succeeded_at', '成功时间');
 
