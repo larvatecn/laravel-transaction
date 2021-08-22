@@ -36,24 +36,27 @@ class ChargeController extends AdminController
     {
         return Grid::make(new Charge(), function (Grid $grid) {
             $grid->filter(function (Grid\Filter $filter) {
-                $filter->equal('id');
+                $filter->equal('id','支付流水号');
+                $filter->equal('order_id','订单号');
+                $filter->equal('transaction_no','网关流水号');
             });
-            $grid->quickSearch(['id']);
+            $grid->quickSearch(['id', 'transaction_no', 'order_id']);
             $grid->model()->orderBy('id', 'desc');
 
             $grid->column('id', 'ID')->sortable();
-            $grid->column('user_id', '用户ID');
 
-            $grid->column('channel', '付款渠道');
-            $grid->column('trade_type', '付款类型');
-
-            $grid->column('amount', '付款金额')->display(function ($amount) {
+            $grid->column('trade_channel', '支付渠道');
+            $grid->column('trade_type', '支付类型');
+            $grid->column('transaction_no', '网关流水号');
+            $grid->column('order_id', '订单号');
+            $grid->column('amount', '支付金额')->display(function ($amount) {
                 return ($amount / 100) . '元';
             });
             $grid->column('score', '积分数量');
-            $grid->column('status', '状态')->using(Charge::getStateMaps())->dot(Charge::getStatusDots(), 'info');
+            $grid->column('state', '状态')->using(Charge::getStateMaps());
             $grid->column('client_ip', '客户端IP');
-            $grid->column('succeeded_at', '成功时间');
+            $grid->column('succeed_at', '成功时间');
+            $grid->column('expired_at', '过期时间');
 
             $grid->column('created_at', '创建时间')->sortable();
 

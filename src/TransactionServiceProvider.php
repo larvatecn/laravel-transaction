@@ -47,6 +47,9 @@ class TransactionServiceProvider extends ServiceProvider
      * Register the service provider.
      *
      * @return void
+     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
+     * @throws \Yansongda\Pay\Exception\ContainerException
+     * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
     public function register()
     {

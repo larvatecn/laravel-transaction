@@ -139,16 +139,6 @@ class Refund extends Model
     }
 
     /**
-     * Get the user that the charge belongs to.
-     *
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(config('auth.providers.' . config('auth.guards.web.provider') . '.model'));
-    }
-
-    /**
      * 关联收单
      *
      * @return BelongsTo

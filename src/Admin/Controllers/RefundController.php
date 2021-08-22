@@ -9,6 +9,7 @@ namespace Larva\Transaction\Admin\Controllers;
 
 use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Grid;
+use Larva\Transaction\Models\Refund;
 
 /**
  * 退款单
@@ -24,5 +25,26 @@ class RefundController extends AdminController
     protected function title(): string
     {
         return '退款单';
+    }
+
+    /**
+     * Make a grid builder.
+     *
+     * @return Grid
+     */
+    protected function grid(): Grid
+    {
+        return Grid::make(new Refund(), function (Grid $grid) {
+            $grid->filter(function (Grid\Filter $filter) {
+                $filter->equal('id','退款流水号');
+                $filter->equal('charge_id','支付流水号');
+                $filter->equal('transaction_no','网关流水号');
+            });
+
+            $grid->quickSearch(['id', 'transaction_no', 'charge_id']);
+            $grid->model()->orderBy('id', 'desc');
+            $grid->column('id', 'ID')->sortable();
+
+        });
     }
 }
