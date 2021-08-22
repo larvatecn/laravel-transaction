@@ -36,14 +36,15 @@ class ChargeController extends AdminController
     {
         return Grid::make(new Charge(), function (Grid $grid) {
             $grid->filter(function (Grid\Filter $filter) {
-                $filter->equal('id','支付流水号');
+                $filter->equal('id','流水号');
                 $filter->equal('order_id','订单号');
                 $filter->equal('transaction_no','网关流水号');
             });
             $grid->quickSearch(['id', 'transaction_no', 'order_id']);
             $grid->model()->orderBy('id', 'desc');
 
-            $grid->column('id', 'ID')->sortable();
+            $grid->column('id', '流水号')->sortable();
+            $grid->column('transaction_no', '网关流水号');
 
             $grid->column('trade_channel', '支付渠道');
             $grid->column('trade_type', '支付类型');

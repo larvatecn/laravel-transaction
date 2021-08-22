@@ -36,14 +36,15 @@ class RefundController extends AdminController
     {
         return Grid::make(new Refund(), function (Grid $grid) {
             $grid->filter(function (Grid\Filter $filter) {
-                $filter->equal('id','退款流水号');
+                $filter->equal('id','流水号');
                 $filter->equal('charge_id','支付流水号');
                 $filter->equal('transaction_no','网关流水号');
             });
 
             $grid->quickSearch(['id', 'transaction_no', 'charge_id']);
             $grid->model()->orderBy('id', 'desc');
-            $grid->column('id', 'ID')->sortable();
+            $grid->column('id', '流水号')->sortable();
+            $grid->column('transaction_no', '网关流水号');
 
         });
     }
