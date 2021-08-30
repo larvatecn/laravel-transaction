@@ -10,17 +10,16 @@ declare (strict_types=1);
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
-use DateTimeInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Events\TransferFailed;
 use Larva\Transaction\Events\TransferShipped;
-use Larva\Transaction\Traits\UsingTimestampAsPrimaryKey;
+use Larva\Transaction\Models\Traits\DateTimeFormatter;
+use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 
 /**
@@ -51,7 +50,7 @@ use Larva\Transaction\Transaction;
  */
 class Transfer extends Model
 {
-    use SoftDeletes, UsingTimestampAsPrimaryKey;
+    use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
 
     //付款状态
     const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
@@ -242,16 +241,5 @@ class Transfer extends Model
             }
         }
         return $this;
-    }
-
-    /**
-     * 为数组 / JSON 序列化准备日期。
-     *
-     * @param DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date): string
-    {
-        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
 }

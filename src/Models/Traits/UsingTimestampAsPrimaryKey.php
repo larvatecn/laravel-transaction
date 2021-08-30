@@ -5,7 +5,8 @@
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-namespace Larva\Transaction\Traits;
+
+namespace Larva\Transaction\Models\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -19,7 +20,7 @@ trait UsingTimestampAsPrimaryKey
     public static function bootUsingTimestampAsPrimaryKey(): void
     {
         static::creating(function (self $model): void {
-            /* @var \Illuminate\Database\Eloquent\Model|\Larva\Transaction\Traits\UsingTimestampAsPrimaryKey $model */
+            /* @var \Illuminate\Database\Eloquent\Model|\Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey $model */
             if (empty($model->{$model->getKeyName()})) {
                 $model->{$model->getKeyName()} = $model->generateKey();
             }

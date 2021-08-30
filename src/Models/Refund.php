@@ -10,7 +10,6 @@ declare (strict_types=1);
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
-use DateTimeInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,7 +18,8 @@ use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\RefundFailed;
 use Larva\Transaction\Events\RefundSucceed;
-use Larva\Transaction\Traits\UsingTimestampAsPrimaryKey;
+use Larva\Transaction\Models\Traits\DateTimeFormatter;
+use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 
 /**
@@ -45,7 +45,7 @@ use Larva\Transaction\Transaction;
  */
 class Refund extends Model
 {
-    use SoftDeletes, UsingTimestampAsPrimaryKey;
+    use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
 
     //退款状态
     const STATUS_PENDING = 'pending';
@@ -216,16 +216,5 @@ class Refund extends Model
             }
         }
         return $this;
-    }
-
-    /**
-     * 为数组 / JSON 序列化准备日期。
-     *
-     * @param DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date): string
-    {
-        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
 }

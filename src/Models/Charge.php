@@ -10,7 +10,6 @@ declare (strict_types=1);
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
-use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -20,7 +19,8 @@ use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeShipped;
-use Larva\Transaction\Traits\UsingTimestampAsPrimaryKey;
+use Larva\Transaction\Models\Traits\DateTimeFormatter;
+use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 
 /**
  * 支付模型
@@ -55,7 +55,7 @@ use Larva\Transaction\Traits\UsingTimestampAsPrimaryKey;
  */
 class Charge extends Model
 {
-    use SoftDeletes, UsingTimestampAsPrimaryKey;
+    use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
 
     public const STATE_SUCCESS = 'SUCCESS';
     public const STATE_REFUND = 'REFUND';
@@ -279,16 +279,5 @@ class Charge extends Model
         ]);
         Event::dispatch(new ChargeShipped($this));
         return $state;
-    }
-
-    /**
-     * 为数组 / JSON 序列化准备日期。
-     *
-     * @param DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date): string
-    {
-        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
 }
