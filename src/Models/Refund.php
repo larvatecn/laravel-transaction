@@ -16,21 +16,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
+use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\RefundFailed;
 use Larva\Transaction\Events\RefundSucceed;
 use Larva\Transaction\Transaction;
 
 /**
  * 退款处理模型
- * @property string $id
- * @property int $charge_id
- * @property int $amount
- * @property string $status
+ * @property string $id 退款流水号
+ * @property int $charge_id 付款ID
+ * @property int $amount 退款资金
+ * @property string $status 退款状态
  * @property string $description 退款描述
- * @property string $failure_code
- * @property string $failure_msg
- * @property string $transaction_no
- * @property string $funding_source 退款资金来源
+ * @property Failure $failure 退款失败对象
+ * @property string $transaction_no 网关流水号
  * @property array $metadata 元数据
  * @property array $extra 渠道数据
  * @property CarbonInterface|null $succeed_at 成功时间
@@ -51,10 +50,6 @@ class Refund extends Model
     const STATUS_PENDING = 'pending';
     const STATUS_SUCCEEDED = 'succeeded';
     const STATUS_FAILED = 'failed';
-
-    //退款资金来源
-    const FUNDING_SOURCE_UNSETTLED = 'unsettled_funds';//使用未结算资金退款
-    const FUNDING_SOURCE_RECHARGE = 'recharge_funds';//使用可用余额退款
 
     /**
      * The table associated with the model.
@@ -84,8 +79,8 @@ class Refund extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg', 'charge_order_id',
-        'transaction_no', 'funding_source', 'metadata', 'extra', 'succeed_at'
+        'id', 'user_id', 'charge_id', 'amount', 'status', 'description', 'failure', 'charge_order_id',
+        'transaction_no', 'metadata', 'extra', 'succeed_at'
     ];
 
     /**
@@ -97,7 +92,8 @@ class Refund extends Model
         'amount' => 'int',
         'succeed' => 'boolean',
         'metadata' => 'array',
-        'extra' => 'array'
+        'extra' => 'array',
+        'failure' => Failure::class,
     ];
 
     /**
@@ -106,10 +102,7 @@ class Refund extends Model
      * @var array
      */
     protected $dates = [
-        'created_at',
-        'updated_at',
-        'deleted_at',
-        'succeed_at',
+        'succeed_at', 'created_at', 'updated_at', 'deleted_at',
     ];
 
     /**
@@ -123,20 +116,10 @@ class Refund extends Model
             /** @var Refund $model */
             $model->id = $model->generateId();
             $model->status = static::STATUS_PENDING;
-            $model->funding_source = $model->getFundingSource();
         });
     }
 
-    /**
-     * 为数组 / JSON 序列化准备日期。
-     *
-     * @param DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date): string
-    {
-        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
-    }
+
 
     /**
      * 关联收单
@@ -146,33 +129,6 @@ class Refund extends Model
     public function charge(): BelongsTo
     {
         return $this->belongsTo(Charge::class);
-    }
-
-    /**
-     * 生成流水号
-     * @return string
-     */
-    protected function generateId(): string
-    {
-        $i = rand(0, 9999);
-        do {
-            if (9999 == $i) {
-                $i = 0;
-            }
-            $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where($this->primaryKey, $id)->exists();
-        } while ($row);
-        return $id;
-    }
-
-    /**
-     * 获取微信退款资金来源
-     * @return string
-     */
-    public function getFundingSource(): string
-    {
-        return config('transaction.wechat.unsettled_funds', 'REFUND_SOURCE_RECHARGE_FUNDS');
     }
 
     /**
@@ -262,4 +218,34 @@ class Refund extends Model
         }
         return $this;
     }
+
+    /**
+     * 为数组 / JSON 序列化准备日期。
+     *
+     * @param DateTimeInterface $date
+     * @return string
+     */
+    protected function serializeDate(DateTimeInterface $date): string
+    {
+        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
+    }
+
+    /**
+     * 生成流水号
+     * @return string
+     */
+    protected function generateId(): string
+    {
+        $i = rand(0, 9999);
+        do {
+            if (9999 == $i) {
+                $i = 0;
+            }
+            $i++;
+            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
+            $row = static::query()->where($this->primaryKey, $id)->exists();
+        } while ($row);
+        return $id;
+    }
+
 }

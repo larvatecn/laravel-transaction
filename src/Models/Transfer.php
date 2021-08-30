@@ -128,16 +128,6 @@ class Transfer extends Model
         });
     }
 
-    /**
-     * 为数组 / JSON 序列化准备日期。
-     *
-     * @param DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date): string
-    {
-        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
-    }
 
     /**
      * 多态关联
@@ -170,23 +160,8 @@ class Transfer extends Model
         return $query->where('status', 'paid');
     }
 
-    /**
-     * 生成流水号
-     * @return string
-     */
-    protected function generateId(): string
-    {
-        $i = rand(0, 9999);
-        do {
-            if (9999 == $i) {
-                $i = 0;
-            }
-            $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where($this->primaryKey, $id)->exists();
-        } while ($row);
-        return $id;
-    }
+
+
 
     /**
      * 是否已付款
@@ -283,5 +258,34 @@ class Transfer extends Model
             }
         }
         return $this;
+    }
+
+    /**
+     * 为数组 / JSON 序列化准备日期。
+     *
+     * @param DateTimeInterface $date
+     * @return string
+     */
+    protected function serializeDate(DateTimeInterface $date): string
+    {
+        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
+    }
+
+    /**
+     * 生成流水号
+     * @return string
+     */
+    protected function generateId(): string
+    {
+        $i = rand(0, 9999);
+        do {
+            if (9999 == $i) {
+                $i = 0;
+            }
+            $i++;
+            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
+            $row = static::query()->where($this->primaryKey, $id)->exists();
+        } while ($row);
+        return $id;
     }
 }
