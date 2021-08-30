@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Events\TransferFailed;
 use Larva\Transaction\Events\TransferShipped;
+use Larva\Transaction\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 
 /**
@@ -50,7 +51,7 @@ use Larva\Transaction\Transaction;
  */
 class Transfer extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, UsingTimestampAsPrimaryKey;
 
     //付款状态
     const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
@@ -122,12 +123,10 @@ class Transfer extends Model
     {
         static::creating(function ($model) {
             /** @var Transfer $model */
-            $model->id = $model->generateId();
             $model->currency = $model->currency ?: 'CNY';
             $model->status = static::STATUS_SCHEDULED;
         });
     }
-
 
     /**
      * 多态关联
@@ -139,18 +138,6 @@ class Transfer extends Model
     }
 
     /**
-     * Get the user that the charge belongs to.
-     *
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(
-            config('auth.providers.' . config('auth.guards.web.provider') . '.model')
-        );
-    }
-
-    /**
      * 查询已付款的
      * @param Builder $query
      * @return Builder
@@ -159,9 +146,6 @@ class Transfer extends Model
     {
         return $query->where('status', 'paid');
     }
-
-
-
 
     /**
      * 是否已付款
@@ -269,23 +253,5 @@ class Transfer extends Model
     protected function serializeDate(DateTimeInterface $date): string
     {
         return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
-    }
-
-    /**
-     * 生成流水号
-     * @return string
-     */
-    protected function generateId(): string
-    {
-        $i = rand(0, 9999);
-        do {
-            if (9999 == $i) {
-                $i = 0;
-            }
-            $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where($this->primaryKey, $id)->exists();
-        } while ($row);
-        return $id;
     }
 }

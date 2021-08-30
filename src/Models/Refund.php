@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\RefundFailed;
 use Larva\Transaction\Events\RefundSucceed;
+use Larva\Transaction\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 
 /**
@@ -44,7 +45,7 @@ use Larva\Transaction\Transaction;
  */
 class Refund extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, UsingTimestampAsPrimaryKey;
 
     //退款状态
     const STATUS_PENDING = 'pending';
@@ -114,11 +115,9 @@ class Refund extends Model
     {
         static::creating(function ($model) {
             /** @var Refund $model */
-            $model->id = $model->generateId();
             $model->status = static::STATUS_PENDING;
         });
     }
-
 
 
     /**
@@ -229,23 +228,4 @@ class Refund extends Model
     {
         return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
-
-    /**
-     * 生成流水号
-     * @return string
-     */
-    protected function generateId(): string
-    {
-        $i = rand(0, 9999);
-        do {
-            if (9999 == $i) {
-                $i = 0;
-            }
-            $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where($this->primaryKey, $id)->exists();
-        } while ($row);
-        return $id;
-    }
-
 }

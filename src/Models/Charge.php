@@ -20,6 +20,7 @@ use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeShipped;
+use Larva\Transaction\Traits\UsingTimestampAsPrimaryKey;
 
 /**
  * 支付模型
@@ -54,7 +55,7 @@ use Larva\Transaction\Events\ChargeShipped;
  */
 class Charge extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, UsingTimestampAsPrimaryKey;
 
     public const STATE_SUCCESS = 'SUCCESS';
     public const STATE_REFUND = 'REFUND';
@@ -151,7 +152,6 @@ class Charge extends Model
     {
         static::creating(function (Charge $model) {
             /** @var Charge $model */
-            $model->id = $model->generateId();
             $model->currency = $model->currency ?: 'CNY';
             $model->expired_at = $model->expired_at ?? $model->freshTimestamp()->addHours(24);//过期时间24小时
             $model->state = static::STATE_NOTPAY;
@@ -166,7 +166,6 @@ class Charge extends Model
     {
         return static::$stateMaps;
     }
-
 
 
     /**
@@ -291,23 +290,5 @@ class Charge extends Model
     protected function serializeDate(DateTimeInterface $date): string
     {
         return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
-    }
-
-    /**
-     * 生成流水号
-     * @return string
-     */
-    protected function generateId(): string
-    {
-        $i = rand(0, 9999);
-        do {
-            if (9999 == $i) {
-                $i = 0;
-            }
-            $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where($this->primaryKey, '=', $id)->exists();
-        } while ($row);
-        return $id;
     }
 }
