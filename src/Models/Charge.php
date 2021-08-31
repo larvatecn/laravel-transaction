@@ -45,9 +45,10 @@ use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
  * @property CarbonInterface|null $updated_at 更新时间
  * @property CarbonInterface|null $deleted_at 软删除时间
  *
+ * @property-read bool $paid 是否已付款
  * @property-read bool $refunded 是否有退款
  * @property-read bool $reversed 是否撤销
- * @property-read string $stateDesc
+ * @property-read string $stateDesc 状态描述
  * @property Model $order 触发该收款的订单模型
  * @property Refund $refunds 退款实例
  *
@@ -94,7 +95,7 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
+        'id', 'channel', 'type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
         'state', 'client_ip', 'payer', 'credential', 'failure', 'expired_at'
     ];
 
@@ -105,8 +106,8 @@ class Charge extends Model
      */
     protected $casts = [
         'id' => 'string',
-        'trade_channel' => 'string',
-        'trade_type' => 'string',
+        'channel' => 'string',
+        'type' => 'string',
         'transaction_no' => 'string',
         'subject' => 'string',
         'description' => 'string',
@@ -184,6 +185,15 @@ class Charge extends Model
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class);
+    }
+
+    /**
+     * 是否已付款
+     * @return bool
+     */
+    public function getPaidAttribute(): bool
+    {
+        return $this->state == static::STATE_SUCCESS;
     }
 
     /**

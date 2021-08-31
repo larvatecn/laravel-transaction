@@ -20,7 +20,7 @@ class CreateTransactionRefundsTable extends Migration
             $table->string('transaction_no',64)->nullable()->comment('网关流水号');
             $table->unsignedInteger('amount');//退款金额大于 0, 必须小于等于可退款金额，默认为全额退款。
             $table->string('reason',80)->nullable()->comment('退款原因');//退款详情，最多 191 个 Unicode 字符。
-            $table->string('status')->default(Refund::STATUS_PENDING)->comment('退款状态');
+            $table->string('state')->default(Refund::STATE_PENDING)->comment('退款状态');
             $table->timestamp('succeed_at', 0)->nullable();//退款成功的时间，用 Unix 时间戳表示。
             $table->json('failure')->nullable()->comment('错误信息');
             $table->softDeletes();

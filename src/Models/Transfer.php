@@ -28,7 +28,7 @@ use Larva\Transaction\Transaction;
  * @property string $id 付款单ID
  * @property string $channel 付款渠道
  * @property-read boolean $paid 是否已经转账
- * @property string $status 状态
+ * @property string $state 状态
  * @property int $amount 金额
  * @property string $currency 币种
  * @property string $recipient_id 接收者ID
@@ -53,10 +53,10 @@ class Transfer extends Model
     use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
 
     //付款状态
-    const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
-    const STATUS_PENDING = 'pending';//pending: 处理中
-    const STATUS_PAID = 'paid';//paid: 付款成功
-    const STATUS_FAILED = 'failed';//failed: 付款失败
+    public const STATE_SCHEDULED = 'scheduled';//scheduled: 待发送
+    public const STATE_PENDING = 'pending';//pending: 处理中
+    public const STATE_PAID = 'paid';//paid: 付款成功
+    public const STATE_FAILED = 'failed';//failed: 付款失败
 
     /**
      * The table associated with the model.

@@ -15,8 +15,8 @@ class CreateTransactionChargesTable extends Migration
     {
         Schema::create('transaction_charges', function (Blueprint $table) {
             $table->string('id',64)->unique()->comment('付款流水号');
-            $table->string('trade_channel', 64)->nullable()->comment('付款渠道');
-            $table->string('trade_type', 16)->nullable()->comment('交易类型');
+            $table->string('channel', 64)->nullable()->comment('付款渠道');
+            $table->string('type', 16)->nullable()->comment('交易类型');
             $table->string('transaction_no', 64)->nullable()->comment('支付渠道流水号');
             $table->morphs('order');//订单关联
             $table->string('subject', 256)->nullable()->comment('订单标题');

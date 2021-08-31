@@ -27,7 +27,7 @@ use Larva\Transaction\Transaction;
  * @property string $id 退款流水号
  * @property int $charge_id 付款ID
  * @property int $amount 退款资金
- * @property string $status 退款状态
+ * @property string $state 退款状态
  * @property string $description 退款描述
  * @property Failure $failure 退款失败对象
  * @property string $transaction_no 网关流水号
@@ -48,9 +48,9 @@ class Refund extends Model
     use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
 
     //退款状态
-    const STATUS_PENDING = 'pending';
-    const STATUS_SUCCEEDED = 'succeeded';
-    const STATUS_FAILED = 'failed';
+    public const STATE_PENDING = 'pending';
+    public const STATE_SUCCEEDED = 'succeeded';
+    public const STATE_FAILED = 'failed';
 
     /**
      * The table associated with the model.
