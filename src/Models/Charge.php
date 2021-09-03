@@ -95,7 +95,7 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'channel', 'type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
+        'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
         'state', 'client_ip', 'payer', 'credential', 'failure', 'expired_at'
     ];
 
@@ -106,8 +106,8 @@ class Charge extends Model
      */
     protected $casts = [
         'id' => 'string',
-        'channel' => 'string',
-        'type' => 'string',
+        'trade_channel' => 'string',
+        'trade_type' => 'string',
         'transaction_no' => 'string',
         'subject' => 'string',
         'description' => 'string',
