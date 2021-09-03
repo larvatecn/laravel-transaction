@@ -35,9 +35,11 @@ return [
             'combine_app_id' => '',
             // 合单商户号
             'combine_mch_id' => '',
-            // 商户秘钥
+
+            // 商户秘钥 V3
             'mch_secret_key' => '',
-            // 商户私钥
+
+            // 商户私钥证书路径
             'mch_secret_cert' => '',
             // 商户公钥证书路径
             'mch_public_cert_path' => '',
@@ -57,9 +59,9 @@ return [
     // optional，默认 warning；日志路径为：sys_get_temp_dir().'/logs/yansongda.pay.log'
     'logger' => [
         'enable' => false,
-        'file' => storage_path('log/pay.log'),
+        'file' => storage_path('logs/pay.log'),
         'level' => 'debug',
-        'type' => 'single', // optional, 可选 daily.
+        'type' => 'daily', // optional, 可选 daily.
         'max_file' => 30,
     ],
 ];
