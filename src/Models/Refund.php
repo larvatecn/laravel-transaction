@@ -91,7 +91,7 @@ class Refund extends Model
      */
     protected $casts = [
         'amount' => 'int',
-        'succeed' => 'boolean',
+        'succeed' => 'bool',
         'metadata' => 'array',
         'extra' => 'array',
         'failure' => Failure::class,

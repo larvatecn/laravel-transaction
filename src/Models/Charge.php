@@ -21,6 +21,7 @@ use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeShipped;
 use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
+use Larva\Transaction\Transaction;
 
 /**
  * 支付模型
@@ -168,7 +169,6 @@ class Charge extends Model
         return static::$stateMaps;
     }
 
-
     /**
      * 关联订单
      * @return MorphTo
@@ -193,7 +193,7 @@ class Charge extends Model
      */
     public function getPaidAttribute(): bool
     {
-        return $this->state == static::STATE_SUCCESS;
+        return $this->state == static::STATE_SUCCESS || $this->state == static::STATE_REFUND;
     }
 
     /**
@@ -212,7 +212,7 @@ class Charge extends Model
     public function getRefundedAmountAttribute()
     {
         if ($this->refunded) {
-            return $this->refunds()->sum('');
+            return $this->refunds()->sum('amount');
         }
         return 0;
     }
@@ -236,15 +236,46 @@ class Charge extends Model
     }
 
     /**
+     * 设置已付款状态
+     * @param string $transactionNo 支付渠道返回的交易流水号。
+     * @return bool
+     */
+    public function markSucceed(string $transactionNo): bool
+    {
+        $state = $this->saveQuietly([
+            'transaction_no' => $transactionNo,
+            'succeed_at' => $this->freshTimestamp(),
+            'state' => static::STATE_SUCCESS,
+        ]);
+        Event::dispatch(new ChargeShipped($this));
+        return $state;
+    }
+
+    /**
+     * 设置支付错误
+     * @param array $failure
+     * @return bool
+     */
+    public function markFailed(array $failure): bool
+    {
+        $status = $this->saveQuietly(['state' => static::STATE_PAYERROR, 'failure' => $failure]);
+        Event::dispatch(new ChargeFailed($this));
+        return $status;
+    }
+
+    /**
      * 发起退款
      * @param string $description 退款描述
      * @return Refund
      */
     public function refund(string $description): Refund
     {
-        return $this->refunds()->create([
+        /** @var Refund $refund */
+        $refund = $this->refunds()->create([
+            'amount' => $this->total_amount,
             'description' => $description
         ]);
+        return $refund;
     }
 
     /**
@@ -264,30 +295,25 @@ class Charge extends Model
     }
 
     /**
-     * 设置支付错误
-     * @param array $failure
-     * @return bool
+     * 预下单
      */
-    public function markFailed(array $failure): bool
+    public function prePay()
     {
-        $status = $this->saveQuietly(['state' => static::STATE_PAYERROR, 'failure' => $failure]);
-        Event::dispatch(new ChargeFailed($this));
-        return $status;
-    }
+        if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
+            $order['spbill_create_ip'] = $this->client_ip;
+            $order['total_fee'] = $this->amount;//总金额，单位分
+            $order['body'] = $this->body;
+            if ($this->time_expire) {
+                $order['time_expire'] = $this->time_expire->format('YmdHis');
+            }
+            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
+        } else if ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
+            $order['total_amount'] = bcdiv($this->total_amount, 100, 2);//总钱数，单位元
 
-    /**
-     * 设置已付款状态
-     * @param string $transactionNo 支付渠道返回的交易流水号。
-     * @return bool
-     */
-    public function markSucceed(string $transactionNo): bool
-    {
-        $state = $this->saveQuietly([
-            'transaction_no' => $transactionNo,
-            'succeed_at' => $this->freshTimestamp(),
-            'state' => static::STATE_SUCCESS,
-        ]);
-        Event::dispatch(new ChargeShipped($this));
-        return $state;
+            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
+            if ($this->trade_type == 'wap') {
+                $order['return_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
+            }
+        }
     }
 }
