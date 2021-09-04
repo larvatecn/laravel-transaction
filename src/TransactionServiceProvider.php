@@ -5,8 +5,13 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types=1);
-
+declare(strict_types=1);
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 namespace Larva\Transaction;
 
 use Illuminate\Support\ServiceProvider;
@@ -32,7 +37,8 @@ class TransactionServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../resources/views' => base_path('resources/views/vendor/transaction'),
             ], 'transaction-views');
-            $this->publishes([
+            $this->publishes(
+                [
                 __DIR__ . '/../config/transaction.php' => config_path('transaction.php'),],
                 'transaction-config'
             );

@@ -5,7 +5,6 @@
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models\Traits;
 
 use Illuminate\Database\Eloquent\Model;

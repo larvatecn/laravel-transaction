@@ -5,8 +5,13 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types = 1);
-
+declare(strict_types=1);
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 namespace Larva\Transaction;
 
 use Illuminate\Support\Facades\Facade;
@@ -21,8 +26,8 @@ use Yansongda\Pay\Provider\Wechat;
 class Transaction extends Facade
 {
     //支持的交易通道
-    const CHANNEL_WECHAT = 'wechat';
-    const CHANNEL_ALIPAY = 'alipay';
+    public const CHANNEL_WECHAT = 'wechat';
+    public const CHANNEL_ALIPAY = 'alipay';
 
     /**
      * Return the facade accessor.

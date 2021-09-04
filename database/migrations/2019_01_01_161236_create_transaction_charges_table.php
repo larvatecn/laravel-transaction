@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,7 +19,7 @@ class CreateTransactionChargesTable extends Migration
     public function up()
     {
         Schema::create('transaction_charges', function (Blueprint $table) {
-            $table->string('id',64)->unique()->comment('付款流水号');
+            $table->string('id', 64)->unique()->comment('付款流水号');
             $table->string('trade_channel', 64)->nullable()->comment('付款渠道');
             $table->string('trade_type', 16)->nullable()->comment('交易类型');
             $table->string('transaction_no', 64)->nullable()->comment('支付渠道流水号');

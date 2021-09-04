@@ -1,10 +1,10 @@
 <?php
 /**
- * This is NOT a freeware, use is subject to license terms
+ * This is NOT a freeware, use is subject to license terms.
+ *
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Admin\Controllers;
 
 use Dcat\Admin\Http\Controllers\AdminController;
@@ -36,9 +36,9 @@ class ChargeController extends AdminController
     {
         return Grid::make(new Charge(), function (Grid $grid) {
             $grid->filter(function (Grid\Filter $filter) {
-                $filter->equal('id','流水号');
-                $filter->equal('order_id','订单号');
-                $filter->equal('transaction_no','网关流水号');
+                $filter->equal('id', '流水号');
+                $filter->equal('order_id', '订单号');
+                $filter->equal('transaction_no', '网关流水号');
             });
             $grid->quickSearch(['id', 'transaction_no', 'order_id']);
             $grid->model()->orderBy('id', 'desc');

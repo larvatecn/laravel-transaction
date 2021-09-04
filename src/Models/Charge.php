@@ -5,8 +5,13 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types=1);
-
+declare(strict_types=1);
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -27,7 +32,7 @@ use Larva\Transaction\Transaction;
  * 支付模型
  * @property string $id 付款流水号
  * @property string $trade_channel 支付渠道
- * @property string $trade_type  支付类型
+ * @property string $trade_type 支付类型
  * @property string $transaction_no 支付网关交易号
  * @property string $order_id 订单ID
  * @property string $order_type 订单类型
@@ -283,7 +288,6 @@ class Charge extends Model
      */
     public function revoke()
     {
-
     }
 
     /**
@@ -291,7 +295,6 @@ class Charge extends Model
      */
     public function close()
     {
-
     }
 
     /**
@@ -307,7 +310,7 @@ class Charge extends Model
                 $order['time_expire'] = $this->time_expire->format('YmdHis');
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
-        } else if ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
+        } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order['total_amount'] = bcdiv($this->total_amount, 100, 2);//总钱数，单位元
 
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);

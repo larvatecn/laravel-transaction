@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -15,15 +20,15 @@ class CreateTransactionTransferTable extends Migration
     public function up()
     {
         Schema::create('transaction_transfer', function (Blueprint $table) {
-            $table->string('id',64)->unique()->comment('交易流水号');
-            $table->string('trade_channel',64)->comment('支付渠道');
-            $table->string('state',15)->default(Transfer::STATE_SCHEDULED)->nullable()->comment('状态');
+            $table->string('id', 64)->unique()->comment('交易流水号');
+            $table->string('trade_channel', 64)->comment('支付渠道');
+            $table->string('state', 15)->default(Transfer::STATE_SCHEDULED)->nullable()->comment('状态');
             $table->morphs('order');//付款单关联
             $table->unsignedInteger('amount')->comment('金额');
-            $table->string('currency',3)->comment('货币代码');
+            $table->string('currency', 3)->comment('货币代码');
             $table->string('recipient_id')->nullable()->comment('接收者 id');
             $table->string('description')->nullable()->comment('备注信息');
-            $table->string('transaction_no',64)->nullable()->comment('网关流水号');
+            $table->string('transaction_no', 64)->nullable()->comment('网关流水号');
             $table->string('failure_msg')->nullable()->comment('错误信息描述');
             $table->json('metadata')->nullable();//元数据
             $table->json('extra')->nullable();//附加参数
