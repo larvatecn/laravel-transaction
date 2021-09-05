@@ -21,36 +21,36 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
+use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\RefundFailed;
 use Larva\Transaction\Events\RefundSucceeded;
+use Larva\Transaction\Models\Traits\DateTimeFormatter;
+use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 
 /**
  * 退款处理模型
  * @property string $id 退款流水号
  * @property int $charge_id 付款ID
+ * @property string $transaction_no 网关流水号
  * @property int $amount 退款金额/单位分
+ * @property string $reason 退款描述
  * @property string $status 退款状态
- * @property string $description 退款描述
- * @property string $failure_code
- * @property string $failure_msg
- * @property string $transaction_no 交易流水号
- * @property string $funding_source 退款资金来源
- * @property array $metadata 元数据
- * @property array $extra 渠道数据
+ * @property Failure $failure 退款失败对象
+ * @property array $extra 渠道返回的额外信息
  * @property CarbonInterface|null $succeed_at 成功时间
- * @property CarbonInterface|null $deleted_at 软删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
+ * @property CarbonInterface|null $deleted_at 软删除时间
  *
- * @property Charge $charge
  * @property-read boolean $succeed
+ * @property Charge $charge
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
 class Refund extends Model
 {
-    use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingTimestampAsPrimaryKey;
+    use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
 
     // 退款状态机
     public const STATUS_PENDING = 'PENDING';//待处理
@@ -58,10 +58,6 @@ class Refund extends Model
     public const STATUS_CLOSED = 'CLOSED';//退款关闭
     public const STATUS_PROCESSING = 'PROCESSING';//退款处理中
     public const STATUS_ABNORMAL = 'ABNORMAL';//退款异常
-
-    //退款资金来源
-    public const FUNDING_SOURCE_UNSETTLED = 'unsettled_funds';//使用未结算资金退款
-    public const FUNDING_SOURCE_RECHARGE = 'recharge_funds';//使用可用余额退款
 
     /**
      * The table associated with the model.
@@ -76,13 +72,6 @@ class Refund extends Model
     protected $primaryKey = 'id';
 
     /**
-     * The "type" of the primary key ID.
-     *
-     * @var string
-     */
-    protected $keyType = 'string';
-
-    /**
      * @var bool 关闭主键自增
      */
     public $incrementing = false;
@@ -91,8 +80,7 @@ class Refund extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg',
-        'transaction_no', 'funding_source', 'metadata', 'extra', 'succeed_at'
+        'id', 'charge_id', 'transaction_no', 'amount', 'reason', 'status', 'extra', 'failure', 'succeed_at',
     ];
 
     /**
@@ -101,10 +89,14 @@ class Refund extends Model
      * @var array
      */
     protected $casts = [
+        'id' => 'int',
+        'charge_id' => 'int',
+        'transaction_no' => 'string',
         'amount' => 'int',
-        'succeed' => 'boolean',
-        'metadata' => 'array',
-        'extra' => 'array'
+        'reason' => 'string',
+        'status' => 'string',
+        'extra' => 'array',
+        'failure' => Failure::class
     ];
 
     /**
@@ -113,7 +105,7 @@ class Refund extends Model
      * @var array
      */
     protected $dates = [
-        'created_at', 'updated_at', 'deleted_at', 'succeed_at',
+        'succeed_at', 'created_at', 'updated_at', 'deleted_at',
     ];
 
     /**
@@ -123,11 +115,9 @@ class Refund extends Model
      */
     public static function booted()
     {
-        static::creating(function ($model) {
-            /** @var Refund $model */
+        static::creating(function (Refund $model) {
             $model->id = $model->generateKey();
             $model->status = static::STATUS_PENDING;
-            $model->funding_source = $model->getFundingSource();
         });
     }
 
@@ -142,15 +132,6 @@ class Refund extends Model
     }
 
     /**
-     * 获取微信退款资金来源
-     * @return string
-     */
-    public function getFundingSource(): string
-    {
-        return config('transaction.wechat.unsettled_funds', 'REFUND_SOURCE_RECHARGE_FUNDS');
-    }
-
-    /**
      * 退款是否成功
      * @return bool
      */
@@ -162,13 +143,12 @@ class Refund extends Model
     /**
      * 设置退款错误
      * @param string $code
-     * @param string $msg
+     * @param string $desc
      * @return bool
      */
-    public function markFailed(string $code, string $msg): bool
+    public function markFailed(string $code, string $desc): bool
     {
-        $succeed = $this->update(['status' => self::STATUS_ABNORMAL, 'failure_code' => $code, 'failure_msg' => $msg]);
-        $this->charge->update(['refunded_amount' => $this->charge->refundedAmount - $this->amount]);//可退款金额，减回去
+        $succeed = $this->updateQuietly(['status' => self::STATUS_ABNORMAL, 'failure' => ['code' => $code, 'desc' => $desc]]);
         Event::dispatch(new RefundFailed($this));
         return $succeed;
     }
@@ -176,15 +156,15 @@ class Refund extends Model
     /**
      * 设置退款完成
      * @param string $transactionNo
-     * @param array $params
+     * @param array $extra
      * @return bool
      */
-    public function markSucceeded(string $transactionNo, array $params = []): bool
+    public function markSucceeded(string $transactionNo, array $extra = []): bool
     {
         if ($this->succeed) {
             return true;
         }
-        $this->update(['status' => self::STATUS_SUCCESS, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $params]);
+        $this->updateQuietly(['status' => self::STATUS_SUCCESS, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $extra]);
         Event::dispatch(new RefundSucceeded($this));
         return $this->succeed;
     }
@@ -196,26 +176,21 @@ class Refund extends Model
      */
     public function gatewayHandle(): Refund
     {
-        $this->charge->update(['refunded' => true, 'amount_refunded' => $this->charge->amount_refunded + $this->amount]);
         $channel = Transaction::getGateway($this->charge->trade_channel);
         if ($this->charge->trade_channel == Transaction::CHANNEL_WECHAT) {
-            $refundAccount = 'REFUND_SOURCE_RECHARGE_FUNDS';
-            if ($this->funding_source == Refund::FUNDING_SOURCE_UNSETTLED) {
-                $refundAccount = 'REFUND_SOURCE_UNSETTLED_FUNDS';
-            }
             $order = [
                 'out_refund_no' => $this->id,
                 'out_trade_no' => $this->charge->id,
                 'total_fee' => $this->charge->total_amount,
                 'refund_fee' => $this->amount,
                 'refund_fee_type' => $this->charge->currency,
-                'refund_desc' => $this->description,
-                'refund_account' => $refundAccount,
+                'refund_desc' => $this->reason,
+                'refund_account' => 'REFUND_SOURCE_RECHARGE_FUNDS',
                 'notify_url' => route('transaction.notify.refund', ['channel' => Transaction::CHANNEL_WECHAT]),
             ];
             try {
                 $response = $channel->refund($order);
-                $this->markRefunded($response->transaction_id, $response->toArray());
+                $this->markSucceeded($response->transaction_id, $response->toArray());
             } catch (Exception $exception) {//设置失败
                 $this->markFailed('FAIL', $exception->getMessage());
             }
@@ -230,7 +205,7 @@ class Refund extends Model
             ];
             try {
                 $response = $channel->refund($order);
-                $this->markRefunded($response->trade_no, $response->toArray());
+                $this->markSucceeded($response->trade_no, $response->toArray());
             } catch (Exception $exception) {//设置失败
                 $this->markFailed('FAIL', $exception->getMessage());
             }

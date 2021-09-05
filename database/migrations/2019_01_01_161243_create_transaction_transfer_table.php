@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -17,7 +15,7 @@ class CreateTransactionTransferTable extends Migration
     public function up()
     {
         Schema::create('transaction_transfer', function (Blueprint $table) {
-            $table->string('id', 64)->unique();
+            $table->unsignedBigInteger('id')->primary()->comment('付款流水号');
             $table->string('trade_channel', 64)->comment('支付渠道');
             $table->string('status', 15)->default(Transfer::STATUS_SCHEDULED)->nullable()->comment('状态');
             $table->morphs('order');//付款单关联

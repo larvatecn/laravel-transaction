@@ -37,7 +37,7 @@ class ChargeObserver
         if (!empty($charge->trade_channel) && !empty($charge->trade_type)) {//不为空就预下单
             $charge->prePay();
         }
-        if (!empty($charge->time_expire)) {//订单失效时间不为空
+        if (!empty($charge->expired_at)) {//订单失效时间不为空
             CheckChargeJob::dispatch($charge)->delay(2);
         }
     }
