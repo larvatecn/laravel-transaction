@@ -54,6 +54,7 @@ use Larva\Transaction\Transaction;
  * @property-read bool $paid 是否已付款
  * @property-read bool $refunded 是否有退款
  * @property-read bool $reversed 是否撤销
+ * @property-read int $refundedAmount 已退款金额
  * @property-read string $stateDesc 状态描述
  * @property Model $order 触发该收款的订单模型
  * @property Refund $refunds 退款实例
