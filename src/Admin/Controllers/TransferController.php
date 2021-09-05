@@ -25,6 +25,6 @@ class TransferController extends AdminController
      */
     protected function title(): string
     {
-        return '提现单';
+        return '付款单';
     }
 }

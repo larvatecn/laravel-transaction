@@ -42,14 +42,14 @@ class NotifyController
             if ($channel == Transaction::CHANNEL_WECHAT) {
                 $params = $pay->verify($request->getContent()); // 验签
                 if ($params['return_code'] == 'SUCCESS') {//入账
-                    $charge = Charge::find($params['out_trade_no']);
+                    $charge = Transaction::getCharge($params['out_trade_no']);
                     $charge->markPaid($params['transaction_id']);
                 }
                 Log::debug('Wechat notify', $params->all());
             } elseif ($channel == Transaction::CHANNEL_ALIPAY) {
                 $params = $pay->verify(); // 验签
                 if ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED') {
-                    $charge = Charge::find($params['out_trade_no']);
+                    $charge = Transaction::getCharge($params['out_trade_no']);
                     $charge->markPaid($params['trade_no']);
                 }
                 Log::debug('Alipay notify', $params->all());

@@ -26,7 +26,7 @@ class ChargeController extends AdminController
      */
     protected function title(): string
     {
-        return '付款单';
+        return '收款单';
     }
 
     /**

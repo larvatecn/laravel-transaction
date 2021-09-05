@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -111,10 +112,7 @@ class Refund extends Model
      * @var array
      */
     protected $dates = [
-        'created_at',
-        'updated_at',
-        'deleted_at',
-        'succeed_at',
+        'created_at', 'updated_at', 'deleted_at', 'succeed_at',
     ];
 
     /**

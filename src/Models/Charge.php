@@ -98,7 +98,7 @@ class Charge extends Model
     protected $keyType = 'string';
 
     /**
-     * @var bool 关闭主键自增
+     * @var bool 主键自增
      */
     public $incrementing = false;
 
@@ -106,9 +106,9 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'total_amount', 'currency', 'subject', 'body',
-        'client_ip', 'extra', 'succeed_at', 'expired_at', 'transaction_no', 'failure_code',
-        'failure_msg', 'metadata', 'credential', 'description'
+        'id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'total_amount', 'currency', 'subject',
+        'client_ip', 'extra', 'transaction_no', 'failure_code', 'failure_msg', 'metadata', 'credential', 'description',
+        'succeed_at', 'expired_at'
     ];
 
     /**
@@ -132,11 +132,7 @@ class Charge extends Model
      * @var array
      */
     protected $dates = [
-        'created_at',
-        'updated_at',
-        'deleted_at',
-        'succeed_at',
-        'expired_at',
+        'created_at', 'updated_at', 'deleted_at', 'succeed_at', 'expired_at',
     ];
 
     /**
