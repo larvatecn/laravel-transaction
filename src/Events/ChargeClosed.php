@@ -29,7 +29,7 @@ class ChargeClosed
     /**
      * @var Charge
      */
-    public $charge;
+    public Charge $charge;
 
     /**
      * ChargeClosed constructor.

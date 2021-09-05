@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Events\TransferFailed;
-use Larva\Transaction\Events\TransferShipped;
+use Larva\Transaction\Events\TransferSucceeded;
 use Larva\Transaction\Transaction;
 
 /**
@@ -180,7 +180,7 @@ class Transfer extends Model
             return true;
         }
         $paid = (bool)$this->update(['transaction_no' => $transactionNo, 'transferred_at' => $this->freshTimestamp(), 'status' => static::STATUS_PAID, 'extra' => $params]);
-        Event::dispatch(new TransferShipped($this));
+        Event::dispatch(new TransferSucceeded($this));
         return $paid;
     }
 
@@ -202,7 +202,7 @@ class Transfer extends Model
      * @return Transfer
      * @throws Exception
      */
-    public function send(): Transfer
+    public function gatewayHandle(): Transfer
     {
         if ($this->status == static::STATUS_SCHEDULED) {
             $channel = Transaction::getGateway($this->channel);

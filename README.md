@@ -37,12 +37,12 @@ This service provider must be registered.
 事件
 ```php
 \Larva\Transaction\Events\ChargeClosed 交易已关闭
-\Larva\Transaction\Events\ChargeFailure 交易失败
-\Larva\Transaction\Events\ChargeShipped 交易已支付
-\Larva\Transaction\Events\RefundFailure 退款失败事件
-\Larva\Transaction\Events\RefundSuccess 退款成功事件
-\Larva\Transaction\Events\TransferFailure 企业付款失败事件
-\Larva\Transaction\Events\TransferShipped 企业付款成功事件
+\Larva\Transaction\Events\ChargeFailed 交易失败
+\Larva\Transaction\Events\ChargeSucceeded 交易已支付
+\Larva\Transaction\Events\RefundFailed 退款失败事件
+\Larva\Transaction\Events\RefundSucceeded 退款成功事件
+\Larva\Transaction\Events\TransferFailed 付款失败事件
+\Larva\Transaction\Events\TransferSucceeded 付款成功事件
 ```
 
 AppServiceProvider 的 boot 中注册 路由
@@ -94,7 +94,6 @@ class Order extends Model {
     {
         if ($this->paid && $this->charge->allowRefund) {
             $refund = $this->charge->refunds()->create([
-                'user_id' => $this->user_id,
                 'amount' => $this->amount,
                 'description' => $description,
                 'charge_id' => $this->charge->id,

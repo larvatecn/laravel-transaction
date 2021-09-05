@@ -22,14 +22,14 @@ use Larva\Transaction\Models\Transfer;
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
-class TransferShipped
+class TransferSucceeded
 {
     use SerializesModels;
 
     /**
      * @var Transfer
      */
-    public $transfer;
+    public Transfer $transfer;
 
     /**
      * TransferShipped constructor.

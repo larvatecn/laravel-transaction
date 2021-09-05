@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
-use Larva\Transaction\Events\ChargeShipped;
+use Larva\Transaction\Events\ChargeSucceeded;
 use Larva\Transaction\Transaction;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -250,7 +250,7 @@ class Charge extends Model
             return true;
         }
         $paid = $this->update(['transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'paid' => true]);
-        Event::dispatch(new ChargeShipped($this));
+        Event::dispatch(new ChargeSucceeded($this));
         return $paid;
     }
 

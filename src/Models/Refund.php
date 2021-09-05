@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Events\RefundFailed;
-use Larva\Transaction\Events\RefundSucceed;
+use Larva\Transaction\Events\RefundSucceeded;
 use Larva\Transaction\Transaction;
 
 /**
@@ -34,8 +34,7 @@ use Larva\Transaction\Transaction;
  * @property string $description 退款描述
  * @property string $failure_code
  * @property string $failure_msg
- * @property string $charge_order_id
- * @property string $transaction_no
+ * @property string $transaction_no 交易流水号
  * @property string $funding_source 退款资金来源
  * @property array $metadata 元数据
  * @property array $extra 渠道数据
@@ -53,10 +52,12 @@ class Refund extends Model
 {
     use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingTimestampAsPrimaryKey;
 
-    //退款状态
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_SUCCEEDED = 'succeeded';
-    public const STATUS_FAILED = 'failed';
+    // 退款状态机
+    public const STATUS_PENDING = 'PENDING';//待处理
+    public const STATUS_SUCCESS = 'SUCCESS';//退款成功
+    public const STATUS_CLOSED = 'CLOSED';//退款关闭
+    public const STATUS_PROCESSING = 'PROCESSING';//退款处理中
+    public const STATUS_ABNORMAL = 'ABNORMAL';//退款异常
 
     //退款资金来源
     public const FUNDING_SOURCE_UNSETTLED = 'unsettled_funds';//使用未结算资金退款
@@ -90,7 +91,7 @@ class Refund extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg', 'charge_order_id',
+        'id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg',
         'transaction_no', 'funding_source', 'metadata', 'extra', 'succeed_at'
     ];
 
@@ -155,7 +156,7 @@ class Refund extends Model
      */
     public function getSucceedAttribute(): bool
     {
-        return $this->status == self::STATUS_SUCCEEDED;
+        return $this->status == self::STATUS_SUCCESS;
     }
 
     /**
@@ -166,8 +167,8 @@ class Refund extends Model
      */
     public function markFailed(string $code, string $msg): bool
     {
-        $succeed = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
-        $this->charge->update(['refunded_amount' => $this->charge->refunded_amount - $this->amount]);//可退款金额，减回去
+        $succeed = $this->update(['status' => self::STATUS_ABNORMAL, 'failure_code' => $code, 'failure_msg' => $msg]);
+        $this->charge->update(['refunded_amount' => $this->charge->refundedAmount - $this->amount]);//可退款金额，减回去
         Event::dispatch(new RefundFailed($this));
         return $succeed;
     }
@@ -183,8 +184,8 @@ class Refund extends Model
         if ($this->succeed) {
             return true;
         }
-        $this->update(['status' => self::STATUS_SUCCEEDED, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $params]);
-        Event::dispatch(new RefundSucceed($this));
+        $this->update(['status' => self::STATUS_SUCCESS, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $params]);
+        Event::dispatch(new RefundSucceeded($this));
         return $this->succeed;
     }
 
@@ -193,7 +194,7 @@ class Refund extends Model
      * @return Refund
      * @throws Exception
      */
-    public function send(): Refund
+    public function gatewayHandle(): Refund
     {
         $this->charge->update(['refunded' => true, 'amount_refunded' => $this->charge->amount_refunded + $this->amount]);
         $channel = Transaction::getGateway($this->charge->trade_channel);

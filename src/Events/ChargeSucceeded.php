@@ -15,28 +15,28 @@ declare(strict_types=1);
 namespace Larva\Transaction\Events;
 
 use Illuminate\Queue\SerializesModels;
-use Larva\Transaction\Models\Refund;
+use Larva\Transaction\Models\Charge;
 
 /**
- * 退款成功事件
+ * 交易已支付
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
-class RefundSucceed
+class ChargeSucceeded
 {
     use SerializesModels;
 
     /**
-     * @var Refund
+     * @var Charge
      */
-    public $refund;
+    public Charge $charge;
 
     /**
-     * RefundSuccess constructor.
-     * @param Refund $refund
+     * ChargeShipped constructor.
+     * @param Charge $charge
      */
-    public function __construct(Refund $refund)
+    public function __construct(Charge $charge)
     {
-        $this->refund = $refund;
+        $this->charge = $charge;
     }
 }

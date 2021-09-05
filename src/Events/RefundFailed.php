@@ -29,7 +29,7 @@ class RefundFailed
     /**
      * @var Refund
      */
-    public $refund;
+    public Refund $refund;
 
     /**
      * RefundFailure constructor.
