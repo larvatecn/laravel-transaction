@@ -47,7 +47,7 @@ This service provider must be registered.
 
 AppServiceProvider 的 boot 中注册 路由
 ```php
-Transaction::routes();
+\Larva\Transaction\Transaction::routes();
 ```
 
 你自己的订单关联
@@ -94,7 +94,6 @@ class Order extends Model {
     {
         if ($this->paid && $this->charge->allowRefund) {
             $refund = $this->charge->refunds()->create([
-                'user_id' => $this->user_id,
                 'amount' => $this->amount,
                 'description' => $description,
                 'charge_id' => $this->charge->id,
