@@ -91,6 +91,7 @@ class Transfer extends Model
      * @var array
      */
     protected $casts = [
+        'id' => 'int',
         'amount' => 'int',
         'metadata' => 'array',
         'extra' => 'array'

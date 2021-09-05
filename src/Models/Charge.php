@@ -115,7 +115,7 @@ class Charge extends Model
      * @var array
      */
     protected $casts = [
-        'id' => 'string',
+        'id' => 'int',
         'trade_channel' => 'string',
         'trade_type' => 'string',
         'transaction_no' => 'string',
