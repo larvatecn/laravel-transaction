@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class NotifyController
                 $params = $pay->verify($request->getContent());
                 if ($params['return_code'] == 'SUCCESS' && $params['result_code'] == 'SUCCESS') {
                     $charge = Transaction::getCharge($params['out_trade_no']);
-                    $charge->markSucceeded($params['transaction_id']);//入账
+                    $charge->markSucceeded($params['transaction_id'], $params->toArray());//入账
                     return $pay->success();
                 }
                 Log::debug('Wechat notify', $params->all());
@@ -50,7 +51,7 @@ class NotifyController
                 $params = $pay->verify(); // 验签
                 if ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED') {
                     $charge = Transaction::getCharge($params['out_trade_no']);
-                    $charge->markSucceeded($params['trade_no']);
+                    $charge->markSucceeded($params['trade_no'], $params->toArray());
                     return $pay->success();
                 }
                 Log::debug('Alipay notify', $params->all());
