@@ -29,7 +29,7 @@ class TransferFailed
     /**
      * @var Transfer
      */
-    public $transfer;
+    public Transfer $transfer;
 
     /**
      * TransferShipped constructor.

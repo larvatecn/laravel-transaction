@@ -29,7 +29,7 @@ class RefundSucceeded
     /**
      * @var Refund
      */
-    public Refund $refund;
+    public $refund;
 
     /**
      * RefundSuccess constructor.

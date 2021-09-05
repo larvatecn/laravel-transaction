@@ -29,7 +29,7 @@ class ChargeFailed
     /**
      * @var Charge
      */
-    public $charge;
+    public Charge $charge;
 
     /**
      * ChargeFailure constructor.

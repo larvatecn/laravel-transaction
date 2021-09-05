@@ -38,11 +38,11 @@ This service provider must be registered.
 ```php
 \Larva\Transaction\Events\ChargeClosed 交易已关闭
 \Larva\Transaction\Events\ChargeFailed 交易失败
-\Larva\Transaction\Events\ChargeShipped 交易已支付
+\Larva\Transaction\Events\ChargeSucceeded 交易已支付
 \Larva\Transaction\Events\RefundFailed 退款失败事件
-\Larva\Transaction\Events\RefundSucceed 退款成功事件
-\Larva\Transaction\Events\TransferFailed 企业付款失败事件
-\Larva\Transaction\Events\TransferShipped 企业付款成功事件
+\Larva\Transaction\Events\RefundSucceeded 退款成功事件
+\Larva\Transaction\Events\TransferFailed 付款失败事件
+\Larva\Transaction\Events\TransferSucceeded 付款成功事件
 ```
 
 AppServiceProvider 的 boot 中注册 路由

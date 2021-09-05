@@ -29,7 +29,7 @@ class ChargeSucceeded
     /**
      * @var Charge
      */
-    public $charge;
+    public Charge $charge;
 
     /**
      * ChargeShipped constructor.
