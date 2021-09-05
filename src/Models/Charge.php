@@ -28,6 +28,7 @@ use Larva\Transaction\Events\ChargeSucceeded;
 use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
+use Larva\Transaction\TransactionException;
 
 /**
  * 支付模型
@@ -95,7 +96,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
-        'state', 'client_ip', 'payer', 'credential', 'extra', 'failure', 'succeed_at', 'expired_at'
+        'state', 'client_ip', 'metadata', 'credential', 'extra', 'failure', 'succeed_at', 'expired_at'
     ];
 
     /**
@@ -114,7 +115,7 @@ class Charge extends Model
         'currency' => 'string',
         'state' => 'string',
         'client_ip' => 'string',
-        'payer' => 'array',
+        'metadata' => 'array',
         'extra' => 'array',
         'credential' => 'array',
         'failure' => Failure::class
@@ -252,18 +253,18 @@ class Charge extends Model
 
     /**
      * 发起退款
-     * @param string $description 退款描述
+     * @param string $reason 退款原因
      * @return Refund
-     * @throws Exception
+     * @throws TransactionException
      */
-    public function refund(string $description): Refund
+    public function refund(string $reason): Refund
     {
         if ($this->paid) {
             /** @var Refund $refund */
             $refund = $this->refunds()->create([
                 'charge_id' => $this->id,
                 'amount' => $this->total_amount,
-                'reason' => $description,
+                'reason' => $reason,
             ]);
             $this->update(['state' => static::STATE_REFUND]);
             return $refund;
@@ -357,15 +358,10 @@ class Charge extends Model
     public function prePay()
     {
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
-            $order['spbill_create_ip'] = $this->client_ip;
-            $order['total_fee'] = $this->amount;//总金额，单位分
-            $order['body'] = $this->body;
-            if ($this->time_expire) {
-                $order['time_expire'] = $this->time_expire->format('YmdHis');
-            }
+
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
-            $order['total_amount'] = bcdiv($this->total_amount, 100, 2);//总钱数，单位元
+
 
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
             if ($this->trade_type == 'wap') {
