@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -46,11 +47,10 @@ use Yansongda\Supports\Collection;
  * @property string $trade_type 支付类型
  * @property string $subject 支付标题
  * @property string $order_id 订单ID
- * @property float $amount 支付金额，单位分
+ * @property float $total_amount 支付金额，单位分
  * @property string $currency 支付币种
  * @property boolean $paid 是否支付成功
  * @property string $transaction_no 支付网关交易号
- * @property int $amount_refunded 已经退款的金额
  * @property string $client_ip 客户端IP
  * @property string $failure_code 失败代码
  * @property string $failure_msg 失败消息
@@ -68,6 +68,7 @@ use Yansongda\Supports\Collection;
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
  *
+ * @property-read int $refundedAmount 已退款金额
  * @property-read int $refundable 可退款金额
  * @property-read boolean $allowRefund 是否可以退款
  *
@@ -75,9 +76,7 @@ use Yansongda\Supports\Collection;
  */
 class Charge extends Model
 {
-    use SoftDeletes;
-    use Traits\DateTimeFormatter;
-    use Traits\UsingTimestampAsPrimaryKey;
+    use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingTimestampAsPrimaryKey;
 
     /**
      * The table associated with the model.
@@ -107,8 +106,8 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'amount', 'currency', 'subject', 'body',
-        'client_ip', 'extra', 'succeed_at', 'expired_at', 'transaction_no', 'amount_refunded', 'failure_code',
+        'id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'total_amount', 'currency', 'subject', 'body',
+        'client_ip', 'extra', 'succeed_at', 'expired_at', 'transaction_no', 'failure_code',
         'failure_msg', 'metadata', 'credential', 'description'
     ];
 
@@ -118,7 +117,7 @@ class Charge extends Model
      * @var array
      */
     protected $casts = [
-        'amount' => 'int',
+        'total_amount' => 'int',
         'paid' => 'boolean',
         'refunded' => 'boolean',
         'reversed' => 'boolean',
@@ -211,12 +210,24 @@ class Charge extends Model
     }
 
     /**
+     * 已退款钱数
+     * @return int|mixed
+     */
+    public function getRefundedAmountAttribute()
+    {
+        if ($this->refunded) {
+            return $this->refunds()->where('status', Refund::STATUS_SUCCEEDED)->sum('amount');
+        }
+        return 0;
+    }
+
+    /**
      * 获取可退款钱数
      * @return float|int
      */
     public function getRefundableAttribute()
     {
-        return $this->amount - $this->amount_refunded;
+        return $this->total_amount - $this->refundedAmount;
     }
 
     /**
@@ -286,7 +297,7 @@ class Charge extends Model
         if ($this->paid) {
             /** @var Refund $refund */
             $refund = $this->refunds()->create([
-                'amount' => $this->amount,
+                'amount' => $this->total_amount,
                 'description' => $description,
                 'charge_id' => $this->id,
                 'charge_order_id' => $this->order,
@@ -310,14 +321,14 @@ class Charge extends Model
 
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order['spbill_create_ip'] = $this->client_ip;
-            $order['total_fee'] = $this->amount;//总金额，单位分
+            $order['total_fee'] = $this->total_amount;//总金额，单位分
             $order['body'] = $this->description;
             if ($this->expired_at) {
                 $order['time_expire'] = $this->expired_at->format('YmdHis');
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
-            $order['total_amount'] = $this->amount / 100;//总钱数，单位元
+            $order['total_amount'] = $this->total_amount / 100;//总钱数，单位元
             $order['subject'] = $this->subject;
             if ($this->description) {
                 $order['body'] = $this->description;

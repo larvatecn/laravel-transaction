@@ -78,6 +78,7 @@ return (new PhpCsFixer\Config())
     ])->setFinder(
         PhpCsFixer\Finder::create()
             ->exclude('config')
+            ->exclude('database')
             ->exclude('resources')
             ->in(__DIR__)
     )->setUsingCache(false);

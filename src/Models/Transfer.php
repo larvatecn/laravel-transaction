@@ -55,9 +55,7 @@ use Larva\Transaction\Transaction;
  */
 class Transfer extends Model
 {
-    use SoftDeletes;
-    use Traits\DateTimeFormatter;
-    use Traits\UsingTimestampAsPrimaryKey;
+    use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingTimestampAsPrimaryKey;
 
     //付款状态
     public const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
@@ -152,24 +150,6 @@ class Transfer extends Model
     public function scopePaid(Builder $query): Builder
     {
         return $query->where('status', 'paid');
-    }
-
-    /**
-     * 生成流水号
-     * @return string
-     */
-    protected function generateId(): string
-    {
-        $i = rand(0, 9999);
-        do {
-            if (9999 == $i) {
-                $i = 0;
-            }
-            $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where($this->primaryKey, $id)->exists();
-        } while ($row);
-        return $id;
     }
 
     /**

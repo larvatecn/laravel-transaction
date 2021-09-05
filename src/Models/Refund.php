@@ -26,10 +26,10 @@ use Larva\Transaction\Transaction;
 
 /**
  * 退款处理模型
- * @property string $id
- * @property int $charge_id
- * @property int $amount
- * @property string $status
+ * @property string $id 退款流水号
+ * @property int $charge_id 付款ID
+ * @property int $amount 退款金额/单位分
+ * @property string $status 退款状态
  * @property string $description 退款描述
  * @property string $failure_code
  * @property string $failure_msg
@@ -38,10 +38,10 @@ use Larva\Transaction\Transaction;
  * @property string $funding_source 退款资金来源
  * @property array $metadata 元数据
  * @property array $extra 渠道数据
+ * @property CarbonInterface|null $succeed_at 成功时间
  * @property CarbonInterface|null $deleted_at 软删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
- * @property CarbonInterface|null $succeed_at 成功时间
  *
  * @property Charge $charge
  * @property-read boolean $succeed
@@ -50,9 +50,7 @@ use Larva\Transaction\Transaction;
  */
 class Refund extends Model
 {
-    use SoftDeletes;
-    use Traits\DateTimeFormatter;
-    use Traits\UsingTimestampAsPrimaryKey;
+    use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingTimestampAsPrimaryKey;
 
     //退款状态
     public const STATUS_PENDING = 'pending';
@@ -171,7 +169,7 @@ class Refund extends Model
     public function markFailed(string $code, string $msg): bool
     {
         $succeed = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
-        $this->charge->update(['amount_refunded' => $this->charge->amount_refunded - $this->amount]);//可退款金额，减回去
+        $this->charge->update(['refunded_amount' => $this->charge->refunded_amount - $this->amount]);//可退款金额，减回去
         Event::dispatch(new RefundFailed($this));
         return $succeed;
     }
@@ -209,7 +207,7 @@ class Refund extends Model
             $order = [
                 'out_refund_no' => $this->id,
                 'out_trade_no' => $this->charge->id,
-                'total_fee' => $this->charge->amount,
+                'total_fee' => $this->charge->total_amount,
                 'refund_fee' => $this->amount,
                 'refund_fee_type' => $this->charge->currency,
                 'refund_desc' => $this->description,
