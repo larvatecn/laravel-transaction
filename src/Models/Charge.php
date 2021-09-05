@@ -54,7 +54,7 @@ use Yansongda\Supports\Collection;
  * @property string $currency 支付币种
  * @property string $state 交易状态
  * @property string $client_ip 客户端IP
- * @property array $payer 支付者信息
+ * @property array $metadata 元信息
  * @property array $credential 客户端支付凭证
  * @property Failure $failure 错误信息
  * @property array $extra 网关返回的信息
@@ -106,7 +106,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
-        'state', 'client_ip', 'payer', 'credential', 'extra', 'failure', 'succeed_at', 'expired_at'
+        'state', 'client_ip', 'metadata', 'credential', 'extra', 'failure', 'succeed_at', 'expired_at'
     ];
 
     /**
@@ -125,7 +125,7 @@ class Charge extends Model
         'currency' => 'string',
         'state' => 'string',
         'client_ip' => 'string',
-        'payer' => 'array',
+        'metadata' => 'array',
         'extra' => 'array',
         'credential' => 'array',
         'failure' => Failure::class
@@ -379,7 +379,7 @@ class Charge extends Model
                 $order['time_expire'] = $this->expired_at->format('YmdHis');
             }
             if ($this->trade_type == 'mp') {
-                $order['openid'] = $this->payer['openid'];
+                $order['openid'] = $this->metadata['openid'];
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {

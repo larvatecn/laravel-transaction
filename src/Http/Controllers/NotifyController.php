@@ -67,7 +67,6 @@ class NotifyController
      * @param Request $request
      * @param string $channel 回调的渠道
      * @return Response
-     * @throws InvalidArgumentException
      */
     public function refund(Request $request, string $channel): Response
     {
