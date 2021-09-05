@@ -47,7 +47,7 @@ This service provider must be registered.
 
 AppServiceProvider 的 boot 中注册 路由
 ```php
-Transaction::routes();
+\Larva\Transaction\Transaction::routes();
 ```
 
 你自己的订单关联

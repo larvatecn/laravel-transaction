@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -40,7 +39,7 @@ use Yansongda\Supports\Collection;
 
 /**
  * 支付模型
- * @property string $id
+ * @property int $id
  * @property boolean $reversed 已撤销
  * @property boolean $refunded 已退款
  * @property string $trade_channel 支付渠道
@@ -151,16 +150,33 @@ class Charge extends Model
     }
 
     /**
+     * 多态关联
+     * @return MorphTo
+     */
+    public function order(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * 关联退款
+     * @return HasMany
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    /**
      * 获取指定渠道的支付凭证
      * @param string $channel
      * @param string $type
      * @return array
-     * @throws InvalidGatewayException
      */
     public function getCredential(string $channel, string $type): array
     {
         $this->update(['trade_channel' => $channel, 'trade_type' => $type]);
-        $this->unify();
+        $this->prePay();
         $this->refresh();
         return $this->credential;
     }
@@ -173,24 +189,6 @@ class Charge extends Model
     public function scopePaid(Builder $query): Builder
     {
         return $query->where('paid', true);
-    }
-
-    /**
-     * 多态关联
-     * @return MorphTo
-     */
-    public function source(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-    /**
-     * 关联退款
-     * @return HasMany
-     */
-    public function refunds(): HasMany
-    {
-        return $this->hasMany(Refund::class);
     }
 
     /**
@@ -244,7 +242,7 @@ class Charge extends Model
      * @param string $transactionNo 支付渠道返回的交易流水号。
      * @return bool
      */
-    public function markPaid(string $transactionNo): bool
+    public function markSucceeded(string $transactionNo): bool
     {
         if ($this->paid) {
             return true;

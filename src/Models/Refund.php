@@ -179,7 +179,7 @@ class Refund extends Model
      * @param array $params
      * @return bool
      */
-    public function markRefunded(string $transactionNo, array $params = []): bool
+    public function markSucceeded(string $transactionNo, array $params = []): bool
     {
         if ($this->succeed) {
             return true;
