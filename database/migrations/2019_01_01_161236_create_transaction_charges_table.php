@@ -27,6 +27,7 @@ class CreateTransactionChargesTable extends Migration
             $table->ipAddress('client_ip')->nullable()->comment('用户的客户端IP');
             $table->json('payer')->nullable()->comment('支付者信息');
             $table->json('credential')->nullable()->comment('客户端支付凭证');
+            $table->json('extra')->nullable()->comment('成功时额外返回的渠道信息');
             $table->json('failure')->nullable()->comment('错误信息');
             $table->timestamp('expired_at')->nullable()->comment('订单失效时间');
             $table->timestamp('succeed_at')->nullable()->comment('订单支付完成时时间');//银联支付成功时间为接收异步通知的时间

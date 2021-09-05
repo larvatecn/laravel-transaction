@@ -14,7 +14,6 @@ declare(strict_types=1);
  */
 namespace Larva\Transaction;
 
-use Exception;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Route;
 use Larva\Transaction\Models\Charge;
@@ -24,8 +23,7 @@ use Yansongda\Pay\Gateways\Alipay;
 use Yansongda\Pay\Gateways\Wechat;
 
 /**
- * Class Transaction
- *
+ * 交易助手
  * @author Tongle Xu <xutongle@gmail.com>
  */
 class Transaction extends Facade
@@ -62,31 +60,6 @@ class Transaction extends Facade
     public static function wechat(): Wechat
     {
         return app('transaction.wechat');
-    }
-
-    /**
-     * Binds the Transaction routes into the controller.
-     *
-     * @param callable|null $callback
-     * @param array $options
-     * @return void
-     */
-    public static function routes($callback = null, array $options = [])
-    {
-        $callback = $callback ?: function ($router) {
-            $router->all();
-        };
-
-        $defaultOptions = [
-            'prefix' => 'transaction',
-            'namespace' => '\Larva\Transaction\Http\Controllers',
-        ];
-
-        $options = array_merge($defaultOptions, $options);
-
-        Route::group($options, function ($router) use ($callback) {
-            $callback(new RouteRegistrar($router));
-        });
     }
 
     /**
@@ -134,5 +107,30 @@ class Transaction extends Facade
     public static function getTransfer(string $id): ?Transfer
     {
         return Transfer::where('id', $id)->first();
+    }
+
+    /**
+     * Binds the Transaction routes into the controller.
+     *
+     * @param callable|null $callback
+     * @param array $options
+     * @return void
+     */
+    public static function routes(callable $callback = null, array $options = [])
+    {
+        $callback = $callback ?: function ($router) {
+            $router->all();
+        };
+
+        $defaultOptions = [
+            'prefix' => 'transaction',
+            'namespace' => '\Larva\Transaction\Http\Controllers',
+        ];
+
+        $options = array_merge($defaultOptions, $options);
+
+        Route::group($options, function ($router) use ($callback) {
+            $callback(new RouteRegistrar($router));
+        });
     }
 }

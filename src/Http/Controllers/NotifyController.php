@@ -16,9 +16,9 @@ namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Transaction;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Yansongda\Pay\Exceptions\InvalidArgumentException;
 
 /**
@@ -33,17 +33,17 @@ class NotifyController
      * @param Request $request
      * @param string $channel 回调的渠道
      * @return Response
-     * @throws InvalidArgumentException
      */
     public function charge(Request $request, string $channel): Response
     {
         try {
             $pay = Transaction::getGateway($channel);
             if ($channel == Transaction::CHANNEL_WECHAT) {
-                $params = $pay->verify($request->getContent()); // 验签
-                if ($params['return_code'] == 'SUCCESS') {//入账
+                $params = $pay->verify($request->getContent());
+                if ($params['return_code'] == 'SUCCESS' && $params['result_code'] == 'SUCCESS') {
                     $charge = Transaction::getCharge($params['out_trade_no']);
-                    $charge->markSucceeded($params['transaction_id']);
+                    $charge->markSucceeded($params['transaction_id']);//入账
+                    return $pay->success();
                 }
                 Log::debug('Wechat notify', $params->all());
             } elseif ($channel == Transaction::CHANNEL_ALIPAY) {
@@ -51,13 +51,14 @@ class NotifyController
                 if ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED') {
                     $charge = Transaction::getCharge($params['out_trade_no']);
                     $charge->markSucceeded($params['trade_no']);
+                    return $pay->success();
                 }
                 Log::debug('Alipay notify', $params->all());
             }
         } catch (\Exception $e) {
-            Log::error($e->getMessage());
+            Log::error($e->getMessage(), $e->getTrace());
         }
-        return $pay->success();
+        throw new NotFoundHttpException('Resource does not exist.');
     }
 
     /**
@@ -75,13 +76,16 @@ class NotifyController
             if ($channel == Transaction::CHANNEL_WECHAT) {
                 if ($params['refund_status'] == 'SUCCESS') {//入账
                     $refund = Transaction::getRefund($params['out_refund_no']);
-                    $refund->markSucceeded($params['success_time'], $params->toArray());
+                    if ($refund) {
+                        $refund->markSucceeded($params['success_time'], $params->toArray());
+                        return $pay->success();
+                    }
                 }
                 Log::debug('Wechat refund notify', $params->all());
             }
         } catch (\Exception $e) {
             Log::error($e->getMessage());
         }
-        return $pay->success();
+        throw new NotFoundHttpException('Resource does not exist.');
     }
 }

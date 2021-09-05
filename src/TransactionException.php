@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 namespace Larva\Transaction;
 
+use RuntimeException;
 use Throwable;
 
 /**

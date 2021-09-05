@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -30,6 +29,7 @@ use Larva\Transaction\Events\ChargeSucceeded;
 use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
+use Larva\Transaction\TransactionException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -269,25 +269,26 @@ class Charge extends Model
      */
     public function refund(string $description): Refund
     {
-        //if ($this->paid) {
-        /** @var Refund $refund */
-        $refund = $this->refunds()->create([
-            'charge_id' => $this->id,
-            'amount' => $this->total_amount,
-            'reason' => $description,
-        ]);
-        $this->update(['state' => static::STATE_REFUND]);
-        return $refund;
-        //}
-        //throw new Exception('Not paid, no refund.');
+        if ($this->paid) {
+            /** @var Refund $refund */
+            $refund = $this->refunds()->create([
+                'charge_id' => $this->id,
+                'amount' => $this->total_amount,
+                'reason' => $description,
+            ]);
+            $this->update(['state' => static::STATE_REFUND]);
+            return $refund;
+        }
+        throw new TransactionException('Not paid, no refund.');
     }
 
     /**
      * 设置已付款状态
      * @param string $transactionNo 支付渠道返回的交易流水号。
+     * @param array $extra
      * @return bool
      */
-    public function markSucceeded(string $transactionNo): bool
+    public function markSucceeded(string $transactionNo, array $extra = []): bool
     {
         if ($this->paid) {
             return true;
@@ -298,6 +299,7 @@ class Charge extends Model
             'succeed_at' => $this->freshTimestamp(),
             'state' => static::STATE_SUCCESS,
             'credential' => null,
+            'extra' => $extra
         ]);
         Event::dispatch(new ChargeSucceeded($this));
         return $state;
@@ -369,13 +371,15 @@ class Charge extends Model
         $order = [
             'out_trade_no' => $this->id,
         ];
-
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order['spbill_create_ip'] = $this->client_ip;
             $order['total_fee'] = $this->total_amount;//总金额，单位分
             $order['body'] = $this->description;
             if ($this->expired_at) {
                 $order['time_expire'] = $this->expired_at->format('YmdHis');
+            }
+            if ($this->trade_type == 'mp') {
+                $order['openid'] = $this->payer['openid'];
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {

@@ -12,18 +12,16 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
-use DateTimeInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
+use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\TransferFailed;
 use Larva\Transaction\Events\TransferSucceeded;
 use Larva\Transaction\Jobs\HandleTransferJob;
@@ -34,22 +32,20 @@ use Larva\Transaction\Transaction;
  *
  * @property string $id 付款单ID
  * @property string $channel 付款渠道
- * @property-read boolean $paid 是否已经转账
  * @property string $status 状态
  * @property int $amount 金额
  * @property string $currency 币种
- * @property string $recipient_id 接收者ID
  * @property string $description 描述
  * @property string $transaction_no 网关交易号
- * @property string $failure_msg 失败详情
- * @property array $metadata 元数据
+ * @property array $failure 失败信息
+ * @property array $recipient 接收者
  * @property array $extra 扩展数据
- * @property CarbonInterface $transferred_at 交易成功时间
- * @property CarbonInterface $deleted_at 软删除时间
+ * @property CarbonInterface|null $succeed_at 交易成功时间
+ * @property CarbonInterface|null $deleted_at 软删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
  *
- * @property-read boolean $scheduled
+ * @property-read boolean $succeed
  *
  * @property Model $order
  *
@@ -60,10 +56,9 @@ class Transfer extends Model
     use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingTimestampAsPrimaryKey;
 
     //付款状态
-    public const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
-    public const STATUS_PENDING = 'pending';//pending: 处理中
-    public const STATUS_PAID = 'paid';//paid: 付款成功
-    public const STATUS_FAILED = 'failed';//failed: 付款失败
+    public const STATUS_PENDING = 'PENDING';//待处理
+    public const STATUS_SUCCESS = 'SUCCESS';//成功
+    public const STATUS_ABNORMAL = 'ABNORMAL';//异常
 
     /**
      * The table associated with the model.
@@ -81,8 +76,8 @@ class Transfer extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'channel', 'status', 'amount', 'currency', 'recipient_id', 'description', 'transaction_no',
-        'failure_msg', 'metadata', 'extra', 'transferred_at'
+        'id', 'channel', 'status', 'amount', 'currency', 'description', 'transaction_no',
+        'failure', 'recipient', 'extra', 'succeed_at'
     ];
 
     /**
@@ -92,8 +87,14 @@ class Transfer extends Model
      */
     protected $casts = [
         'id' => 'int',
+        'channel' => 'string',
+        'status' => 'string',
         'amount' => 'int',
-        'metadata' => 'array',
+        'currency' => 'string',
+        'description' => 'string',
+        'transaction_no' => 'string',
+        'failure' => Failure::class,
+        'recipient' => 'array',
         'extra' => 'array'
     ];
 
@@ -103,7 +104,7 @@ class Transfer extends Model
      * @var array
      */
     protected $dates = [
-        'created_at', 'updated_at', 'deleted_at', 'transferred_at',
+        'succeed_at', 'created_at', 'updated_at', 'deleted_at',
     ];
 
     /**
@@ -113,11 +114,10 @@ class Transfer extends Model
      */
     public static function booted()
     {
-        static::creating(function ($model) {
-            /** @var Transfer $model */
+        static::creating(function (Transfer $model) {
             $model->id = $model->generateKey();
             $model->currency = $model->currency ?: 'CNY';
-            $model->status = static::STATUS_SCHEDULED;
+            $model->status = static::STATUS_PENDING;
         });
         static::created(function (Transfer $model) {
             HandleTransferJob::dispatch($model)->delay(1);
@@ -134,31 +134,12 @@ class Transfer extends Model
     }
 
     /**
-     * 查询已付款的
-     * @param Builder $query
-     * @return Builder
-     */
-    public function scopePaid(Builder $query): Builder
-    {
-        return $query->where('status', 'paid');
-    }
-
-    /**
      * 是否已付款
-     * @return boolean
+     * @return bool
      */
-    public function getPaidAttribute(): bool
+    public function getSucceedAttribute(): bool
     {
-        return $this->status == static::STATUS_PAID;
-    }
-
-    /**
-     * 是否待发送
-     * @return boolean
-     */
-    public function getScheduledAttribute(): bool
-    {
-        return $this->status == static::STATUS_SCHEDULED;
+        return $this->status == self::STATUS_SUCCESS;
     }
 
     /**
@@ -167,25 +148,30 @@ class Transfer extends Model
      * @param array $params
      * @return bool
      */
-    public function markPaid(string $transactionNo, array $params = []): bool
+    public function markSucceeded(string $transactionNo, array $params = []): bool
     {
-        if ($this->paid) {
+        if ($this->succeed) {
             return true;
         }
-        $paid = (bool)$this->update(['transaction_no' => $transactionNo, 'transferred_at' => $this->freshTimestamp(), 'status' => static::STATUS_PAID, 'extra' => $params]);
+        $state = $this->update([
+            'transaction_no' => $transactionNo,
+            'transferred_at' => $this->freshTimestamp(),
+            'status' => static::STATUS_SUCCESS,
+            'extra' => $params
+        ]);
         Event::dispatch(new TransferSucceeded($this));
-        return $paid;
+        return $state;
     }
 
     /**
      * 设置提现错误
      * @param string $code
-     * @param string $msg
+     * @param string $desc
      * @return bool
      */
-    public function markFailed(string $code, string $msg): bool
+    public function markFailed(string $code, string $desc): bool
     {
-        $res = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
+        $res = $this->update(['status' => self::STATUS_ABNORMAL, 'failure' => ['code' => $code, 'desc' => $desc]]);
         Event::dispatch(new TransferFailed($this));
         return $res;
     }
@@ -197,46 +183,45 @@ class Transfer extends Model
      */
     public function gatewayHandle(): Transfer
     {
-        if ($this->status == static::STATUS_SCHEDULED) {
-            $channel = Transaction::getGateway($this->channel);
-            if ($this->channel == Transaction::CHANNEL_WECHAT) {
-                $config = [
-                    'partner_trade_no' => $this->id,
-                    'openid' => $this->recipient_id,
-                    'check_name' => 'NO_CHECK',
-                    'amount' => $this->amount,
-                    'desc' => $this->description,
-                    'type' => $this->extra['type'],
-                ];
-                if (isset($this->extra['user_name'])) {
-                    $config['check_name'] = 'FORCE_CHECK';
-                    $config['re_user_name'] = $this->extra['user_name'];
-                }
-                try {
-                    $response = $channel->transfer($config);
-                    $this->markPaid($response->payment_no, $response->toArray());
-                } catch (Exception $exception) {//设置付款失败
-                    $this->markFailed('FAIL', $exception->getMessage());
-                }
-            } elseif ($this->channel == Transaction::CHANNEL_ALIPAY) {
-                $config = [
-                    'out_biz_no' => $this->id,
-                    'payee_type' => $this->extra['recipient_account_type'],
-                    'payee_account' => $this->recipient_id,
-                    'amount' => $this->amount / 100,
-                    'remark' => $this->description,
-                ];
-                if (isset($this->extra['recipient_name'])) {
-                    $config['payee_real_name'] = $this->extra['recipient_name'];
-                }
-                try {
-                    $response = $channel->transfer($config);
-                    $this->markPaid($response->payment_no, $response->toArray());
-                } catch (Exception $exception) {//设置提现失败
-                    $this->markFailed('FAIL', $exception->getMessage());
-                }
+        $channel = Transaction::getGateway($this->channel);
+        if ($this->channel == Transaction::CHANNEL_WECHAT) {
+            $config = [
+                'partner_trade_no' => $this->id,
+                'openid' => $this->recipient['id'],
+                'check_name' => 'NO_CHECK',
+                'amount' => $this->amount,
+                'desc' => $this->description,
+                'type' => $this->recipient['type'],
+            ];
+            if (isset($this->recipient['recipient_name'])) {
+                $config['check_name'] = 'FORCE_CHECK';
+                $config['re_user_name'] = $this->recipient['recipient_name'];
+            }
+            try {
+                $response = $channel->transfer($config);
+                $this->markSucceeded($response->payment_no, $response->toArray());
+            } catch (Exception $exception) {//设置付款失败
+                $this->markFailed('FAIL', $exception->getMessage());
+            }
+        } elseif ($this->channel == Transaction::CHANNEL_ALIPAY) {
+            $config = [
+                'out_biz_no' => $this->id,
+                'payee_type' => $this->extra['recipient_account_type'],
+                'payee_account' => $this->recipient['id'],
+                'amount' => $this->amount / 100,
+                'remark' => $this->description,
+            ];
+            if (isset($this->recipient['recipient_name'])) {
+                $config['payee_real_name'] = $this->recipient['recipient_name'];
+            }
+            try {
+                $response = $channel->transfer($config);
+                $this->markSucceeded($response->payment_no, $response->toArray());
+            } catch (Exception $exception) {//设置提现失败
+                $this->markFailed('FAIL', $exception->getMessage());
             }
         }
+
         return $this;
     }
 }

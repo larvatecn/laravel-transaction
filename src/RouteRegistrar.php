@@ -58,6 +58,16 @@ class RouteRegistrar
      */
     public function forNotify()
     {
+        $this->router->match(['get', 'post'], 'notify/charge/{channel}', [//支付通知
+            'uses' => 'NotifyController@charge',
+            'as' => 'transaction.notify.charge',
+        ]);
+
+        $this->router->match(['get', 'post'], 'notify/refund/{channel}', [//退款通知
+            'uses' => 'NotifyController@refund',
+            'as' => 'transaction.notify.refund',
+        ]);
+
         $this->router->match(['get', 'post'], 'callback/charge/{channel}', [//支付回调
             'uses' => 'PaymentController@paymentCallback',
             'as' => 'transaction.callback.charge',
@@ -70,17 +80,7 @@ class RouteRegistrar
 
         $this->router->match(['get'], 'charge/{id}', [//支付状态查询
             'uses' => 'PaymentController@query',
-            'as' => 'transaction.query.charge',
-        ]);
-
-        $this->router->match(['get', 'post'], 'notify/charge/{channel}', [//支付通知
-            'uses' => 'NotifyController@charge',
-            'as' => 'transaction.notify.charge',
-        ]);
-
-        $this->router->match(['get', 'post'], 'notify/refund/{channel}', [//退款通知
-            'uses' => 'NotifyController@refund',
-            'as' => 'transaction.notify.refund',
+            'as' => 'transaction.charge.query',
         ]);
     }
 }
