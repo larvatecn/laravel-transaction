@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -76,13 +77,6 @@ class Transfer extends Model
     protected $primaryKey = 'id';
 
     /**
-     * The "type" of the primary key ID.
-     *
-     * @var string
-     */
-    protected $keyType = 'string';
-
-    /**
      * @var bool 关闭主键自增
      */
     public $incrementing = false;
@@ -129,6 +123,10 @@ class Transfer extends Model
             /** @var Transfer $model */
             $model->currency = $model->currency ?: 'CNY';
             $model->status = static::STATUS_SCHEDULED;
+        });
+        static::created(function (Transfer $model) {
+            //委派任务
+            $model->gatewayHandle();
         });
     }
 

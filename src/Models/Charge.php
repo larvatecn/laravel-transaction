@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -30,7 +31,7 @@ use Larva\Transaction\Transaction;
 
 /**
  * 支付模型
- * @property string $id 付款流水号
+ * @property int $id 收款流水号
  * @property string $trade_channel 支付渠道
  * @property string $trade_type 支付类型
  * @property string $transaction_no 支付网关交易号
@@ -50,14 +51,16 @@ use Larva\Transaction\Transaction;
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface|null $updated_at 更新时间
  * @property CarbonInterface|null $deleted_at 软删除时间
+ *
  * @property Model $order 触发该收款的订单模型
- * @property Refund $refunds 退款实例
+ * @property Refund $refunds 退款列表
  *
  * @property-read bool $paid 是否已付款
  * @property-read bool $refunded 是否有退款
- * @property-read bool $reversed 是否撤销
- * @property-read int $refundedAmount 已退款金额
+ * @property-read bool $reversed 是否已撤销
+ * @property-read bool $closed 是否已关闭
  * @property-read string $stateDesc 状态描述
+ * @property-read int $refundedAmount 已退款钱数
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
@@ -87,14 +90,7 @@ class Charge extends Model
     protected $primaryKey = 'id';
 
     /**
-     * The "type" of the primary key ID.
-     *
-     * @var string
-     */
-    protected $keyType = 'string';
-
-    /**
-     * @var bool 关闭主键自增
+     * @var bool 主键自增
      */
     public $incrementing = false;
 
@@ -103,7 +99,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
-        'state', 'client_ip', 'payer', 'credential', 'failure', 'expired_at'
+        'state', 'client_ip', 'payer', 'credential', 'failure', 'succeed_at', 'expired_at'
     ];
 
     /**
@@ -145,9 +141,9 @@ class Charge extends Model
         self::STATE_REFUND => '转入退款',
         self::STATE_NOTPAY => '未支付',
         self::STATE_CLOSED => '已关闭',
-        self::STATE_REVOKED => '已撤销',
-        self::STATE_USERPAYING => '用户支付中',
-        self::STATE_PAYERROR => '支付失败',
+        self::STATE_REVOKED => '已撤销',//已撤销（仅付款码支付会返回）
+        self::STATE_USERPAYING => '用户支付中',//用户支付中（仅付款码支付会返回）
+        self::STATE_PAYERROR => '支付失败',//支付失败（仅付款码支付会返回）
         self::STATE_ACCEPT => '已接收，等待扣款',
     ];
 
@@ -159,10 +155,15 @@ class Charge extends Model
     public static function booted()
     {
         static::creating(function (Charge $model) {
-            /** @var Charge $model */
+            $model->id = $model->generateKey();
             $model->currency = $model->currency ?: 'CNY';
             $model->expired_at = $model->expired_at ?? $model->freshTimestamp()->addHours(24);//过期时间24小时
             $model->state = static::STATE_NOTPAY;
+        });
+        static::created(function (Charge $model) {
+            if (!empty($model->trade_channel) && !empty($model->trade_type)) {//不为空就预下单
+                $model->prePay();
+            }
         });
     }
 
@@ -212,19 +213,7 @@ class Charge extends Model
     }
 
     /**
-     * 已退款钱数
-     * @return int|mixed
-     */
-    public function getRefundedAmountAttribute()
-    {
-        if ($this->refunded) {
-            return $this->refunds()->sum('amount');
-        }
-        return 0;
-    }
-
-    /**
-     * 是否已经撤销
+     * 是否已撤销
      * @return bool
      */
     public function getReversedAttribute(): bool
@@ -233,12 +222,56 @@ class Charge extends Model
     }
 
     /**
-     * 状态描述
-     * @return mixed|string
+     * 是否已关闭
+     * @return bool
      */
-    public function getStateDescAttribute()
+    public function getClosedAttribute(): bool
+    {
+        return $this->state == static::STATE_CLOSED;
+    }
+
+    /**
+     * 状态描述
+     * @return string
+     */
+    public function getStateDescAttribute(): string
     {
         return static::$stateMaps[$this->state] ?? '未知状态';
+    }
+
+    /**
+     * 已退款钱数
+     * @return int
+     */
+    public function getRefundedAmountAttribute(): int
+    {
+        if ($this->refunded) {
+            return $this->refunds()
+                ->where('status', 'in', [Refund::STATUS_PENDING, Refund::STATUS_SUCCESS, Refund::STATUS_PROCESSING])
+                ->sum('amount');
+        }
+        return 0;
+    }
+
+    /**
+     * 发起退款
+     * @param string $description 退款描述
+     * @return Refund
+     * @throws Exception
+     */
+    public function refund(string $description): Refund
+    {
+        //if ($this->paid) {
+        /** @var Refund $refund */
+        $refund = $this->refunds()->create([
+            'charge_id' => $this->id,
+            'amount' => $this->total_amount,
+            'reason' => $description,
+        ]);
+        $this->update(['state' => static::STATE_REFUND]);
+        return $refund;
+        //}
+        //throw new Exception('Not paid, no refund.');
     }
 
     /**
@@ -246,12 +279,17 @@ class Charge extends Model
      * @param string $transactionNo 支付渠道返回的交易流水号。
      * @return bool
      */
-    public function markSucceed(string $transactionNo): bool
+    public function markSucceeded(string $transactionNo): bool
     {
-        $state = $this->saveQuietly([
+        if ($this->paid) {
+            return true;
+        }
+        $state = $this->updateQuietly([
             'transaction_no' => $transactionNo,
+            'expired_at' => null,
             'succeed_at' => $this->freshTimestamp(),
             'state' => static::STATE_SUCCESS,
+            'credential' => null,
         ]);
         Event::dispatch(new ChargeSucceeded($this));
         return $state;
@@ -259,47 +297,63 @@ class Charge extends Model
 
     /**
      * 设置支付错误
-     * @param array $failure
+     * @param string $code
+     * @param string $desc
      * @return bool
      */
-    public function markFailed(array $failure): bool
+    public function markFailed(string $code, string $desc): bool
     {
-        $status = $this->saveQuietly(['state' => static::STATE_PAYERROR, 'failure' => $failure]);
-        Event::dispatch(new ChargeFailed($this));
-        return $status;
-    }
-
-    /**
-     * 发起退款
-     * @param string $description 退款描述
-     * @return Refund
-     */
-    public function refund(string $description): Refund
-    {
-        /** @var Refund $refund */
-        $refund = $this->refunds()->create([
-            'amount' => $this->total_amount,
-            'description' => $description
+        $state = $this->updateQuietly([
+            'state' => static::STATE_PAYERROR,
+            'credential' => null,
+            'failure' => ['code' => $code, 'desc' => $desc]
         ]);
-        return $refund;
+        Event::dispatch(new ChargeFailed($this));
+        return $state;
     }
 
     /**
-     * 撤销交易
+     * 关闭该笔收单
+     * @return bool
+     * @throws Exception
      */
-    public function revoke()
+    public function markClosed(): bool
     {
+        if ($this->state == static::STATE_NOTPAY) {
+            $channel = Transaction::getGateway($this->trade_channel);
+            try {
+                $result = $channel->close($this->id);
+                if ($result) {
+                    $this->update(['state' => static::STATE_CLOSED, 'credential' => null]);
+                    Event::dispatch(new ChargeClosed($this));
+                    return true;
+                }
+                return false;
+            } catch (GatewayException | InvalidArgumentException | InvalidConfigException | InvalidSignException $e) {
+                Log::error($e->getMessage());
+            }
+        }
+        return false;
     }
 
     /**
-     * 关闭交易
+     * 获取指定渠道的支付凭证
+     * @param string $channel
+     * @param string $type
+     * @return array
+     * @throws InvalidGatewayException
      */
-    public function close()
+    public function getCredential(string $channel, string $type): array
     {
+        $this->update(['trade_channel' => $channel, 'trade_type' => $type]);
+        $this->prePay();
+        $this->refresh();
+        return $this->credential;
     }
 
     /**
-     * 预下单
+     * 订单付款预下单
+     * @throws InvalidGatewayException
      */
     public function prePay()
     {

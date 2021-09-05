@@ -43,10 +43,6 @@ class TransactionServiceProvider extends ServiceProvider
                 'transaction-config'
             );
         }
-
-        \Larva\Transaction\Models\Charge::observe(\Larva\Transaction\Observers\ChargeObserver::class);
-        \Larva\Transaction\Models\Refund::observe(\Larva\Transaction\Observers\RefundObserver::class);
-        \Larva\Transaction\Models\Transfer::observe(\Larva\Transaction\Observers\TransferObserver::class);
     }
 
     /**

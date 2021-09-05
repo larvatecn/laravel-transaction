@@ -16,6 +16,7 @@ namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Transaction;
 use Symfony\Component\HttpFoundation\Response;
 

@@ -7,6 +7,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
@@ -33,7 +34,7 @@ class Failure implements CastsAttributes
      */
     public function get($model, $key, $value, $attributes): array
     {
-        $value = json_decode($value, true);
+        $value = $value ? json_decode($value, true) : [];
         return array_merge($this->defaultValue, is_array($value) ? $value : []);
     }
 

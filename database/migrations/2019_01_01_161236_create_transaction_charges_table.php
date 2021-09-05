@@ -14,7 +14,7 @@ class CreateTransactionChargesTable extends Migration
     public function up()
     {
         Schema::create('transaction_charges', function (Blueprint $table) {
-            $table->string('id', 64)->unique()->comment('付款流水号');
+            $table->unsignedBigInteger('id')->primary()->comment('收款流水号');
             $table->string('trade_channel', 64)->nullable()->comment('付款渠道');
             $table->string('trade_type', 16)->nullable()->comment('交易类型');
             $table->string('transaction_no', 64)->nullable()->comment('支付渠道流水号');
@@ -28,10 +28,10 @@ class CreateTransactionChargesTable extends Migration
             $table->json('payer')->nullable()->comment('支付者信息');
             $table->json('credential')->nullable()->comment('客户端支付凭证');
             $table->json('failure')->nullable()->comment('错误信息');
-            $table->timestamp('expired_at')->nullable()->comment('交易结束时间');
-            $table->timestamp('succeed_at', 0)->nullable()->comment('支付完成时间');
-            $table->timestamps();
+            $table->timestamp('expired_at')->nullable()->comment('订单失效时间');
+            $table->timestamp('succeed_at')->nullable()->comment('订单支付完成时时间');//银联支付成功时间为接收异步通知的时间
             $table->softDeletes();
+            $table->timestamps();
         });
     }
 
