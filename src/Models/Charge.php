@@ -308,7 +308,7 @@ class Charge extends Model
      * 订单付款预下单
      * @throws InvalidGatewayException
      */
-    public function unify()
+    public function prePay()
     {
         $channel = Transaction::getGateway($this->trade_channel);
         $order = [
