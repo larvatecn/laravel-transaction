@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\RefundFailed;
 use Larva\Transaction\Events\RefundSucceeded;
+use Larva\Transaction\Jobs\HandleRefundJob;
 use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
@@ -65,11 +66,6 @@ class Refund extends Model
      * @var string
      */
     protected $table = 'transaction_refunds';
-
-    /**
-     * @var string
-     */
-    protected $primaryKey = 'id';
 
     /**
      * @var bool 关闭主键自增
@@ -120,8 +116,7 @@ class Refund extends Model
             $model->status = static::STATUS_PENDING;
         });
         static::created(function (Refund $model) {
-            //委派任务
-            $model->gatewayHandle();
+            HandleRefundJob::dispatch($model)->delay(1);
         });
     }
 

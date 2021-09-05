@@ -46,6 +46,7 @@ use Larva\Transaction\Transaction;
  * @property array $payer 支付者信息
  * @property array $credential 客户端支付凭证
  * @property Failure $failure 错误信息
+ * @property array $extra 网关返回的信息
  * @property CarbonInterface|null $succeed_at 支付完成时间
  * @property CarbonInterface|null $expired_at 过期时间
  * @property CarbonInterface $created_at 创建时间
@@ -85,11 +86,6 @@ class Charge extends Model
     protected $table = 'transaction_charges';
 
     /**
-     * @var string 主键名称
-     */
-    protected $primaryKey = 'id';
-
-    /**
      * @var bool 主键自增
      */
     public $incrementing = false;
@@ -99,7 +95,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
-        'state', 'client_ip', 'payer', 'credential', 'failure', 'succeed_at', 'expired_at'
+        'state', 'client_ip', 'payer', 'credential', 'extra', 'failure', 'succeed_at', 'expired_at'
     ];
 
     /**
@@ -108,7 +104,7 @@ class Charge extends Model
      * @var array
      */
     protected $casts = [
-        'id' => 'string',
+        'id' => 'int',
         'trade_channel' => 'string',
         'trade_type' => 'string',
         'transaction_no' => 'string',
@@ -119,6 +115,7 @@ class Charge extends Model
         'state' => 'string',
         'client_ip' => 'string',
         'payer' => 'array',
+        'extra' => 'array',
         'credential' => 'array',
         'failure' => Failure::class
     ];
@@ -261,25 +258,26 @@ class Charge extends Model
      */
     public function refund(string $description): Refund
     {
-        //if ($this->paid) {
-        /** @var Refund $refund */
-        $refund = $this->refunds()->create([
-            'charge_id' => $this->id,
-            'amount' => $this->total_amount,
-            'reason' => $description,
-        ]);
-        $this->update(['state' => static::STATE_REFUND]);
-        return $refund;
-        //}
-        //throw new Exception('Not paid, no refund.');
+        if ($this->paid) {
+            /** @var Refund $refund */
+            $refund = $this->refunds()->create([
+                'charge_id' => $this->id,
+                'amount' => $this->total_amount,
+                'reason' => $description,
+            ]);
+            $this->update(['state' => static::STATE_REFUND]);
+            return $refund;
+        }
+        throw new TransactionException('Not paid, no refund.');
     }
 
     /**
      * 设置已付款状态
      * @param string $transactionNo 支付渠道返回的交易流水号。
+     * @param array $extra
      * @return bool
      */
-    public function markSucceeded(string $transactionNo): bool
+    public function markSucceeded(string $transactionNo, array $extra = []): bool
     {
         if ($this->paid) {
             return true;
@@ -290,6 +288,7 @@ class Charge extends Model
             'succeed_at' => $this->freshTimestamp(),
             'state' => static::STATE_SUCCESS,
             'credential' => null,
+            'extra' => $extra
         ]);
         Event::dispatch(new ChargeSucceeded($this));
         return $state;

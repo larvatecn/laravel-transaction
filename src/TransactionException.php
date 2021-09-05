@@ -11,7 +11,11 @@ namespace Larva\Transaction;
 use RuntimeException;
 use Throwable;
 
-class TransactionException extends RuntimeException
+/**
+ * “Ï≥£
+ * @author Tongle Xu <xutongle@gmail.com>
+ */
+class TransactionException extends \RuntimeException
 {
     public function __construct($message = '', $code = 500, Throwable $previous = null)
     {
