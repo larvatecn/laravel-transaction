@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Events\TransferFailed;
 use Larva\Transaction\Events\TransferSucceeded;
+use Larva\Transaction\Jobs\HandleTransferJob;
 use Larva\Transaction\Transaction;
 
 /**
@@ -70,11 +71,6 @@ class Transfer extends Model
      * @var string
      */
     protected $table = 'transaction_transfer';
-
-    /**
-     * @var string 定义主键
-     */
-    protected $primaryKey = 'id';
 
     /**
      * @var bool 关闭主键自增
@@ -123,8 +119,7 @@ class Transfer extends Model
             $model->status = static::STATUS_SCHEDULED;
         });
         static::created(function (Transfer $model) {
-            //委派任务
-            $model->gatewayHandle();
+            HandleTransferJob::dispatch($model)->delay(1);
         });
     }
 

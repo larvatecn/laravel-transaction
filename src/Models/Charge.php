@@ -17,7 +17,6 @@ namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
 use Exception;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -28,7 +27,6 @@ use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeSucceeded;
-use Larva\Transaction\Jobs\CheckChargeJob;
 use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
@@ -59,6 +57,7 @@ use Yansongda\Supports\Collection;
  * @property array $payer 支付者信息
  * @property array $credential 客户端支付凭证
  * @property Failure $failure 错误信息
+ * @property array $extra 网关返回的信息
  * @property CarbonInterface|null $succeed_at 支付完成时间
  * @property CarbonInterface|null $expired_at 过期时间
  * @property CarbonInterface $created_at 创建时间
@@ -98,11 +97,6 @@ class Charge extends Model
     protected $table = 'transaction_charges';
 
     /**
-     * @var string 主键名称
-     */
-    protected $primaryKey = 'id';
-
-    /**
      * @var bool 主键自增
      */
     public $incrementing = false;
@@ -112,7 +106,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
-        'state', 'client_ip', 'payer', 'credential', 'failure', 'succeed_at', 'expired_at'
+        'state', 'client_ip', 'payer', 'credential', 'extra', 'failure', 'succeed_at', 'expired_at'
     ];
 
     /**
@@ -132,6 +126,7 @@ class Charge extends Model
         'state' => 'string',
         'client_ip' => 'string',
         'payer' => 'array',
+        'extra' => 'array',
         'credential' => 'array',
         'failure' => Failure::class
     ];
