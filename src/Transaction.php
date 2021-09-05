@@ -90,16 +90,16 @@ class Transaction extends Facade
      * 获取交易网关
      * @param string $channel
      * @return Alipay|Wechat
-     * @throws Exception
+     * @throws TransactionException
      */
-    public static function getChannel(string $channel)
+    public static function getGateway(string $channel)
     {
         if ($channel == static::CHANNEL_WECHAT) {
             return static::wechat();
         } elseif ($channel == static::CHANNEL_ALIPAY) {
             return static::alipay();
         } else {
-            throw new Exception('The channel does not exist.');
+            throw new TransactionException('The channel does not exist.');
         }
     }
 }

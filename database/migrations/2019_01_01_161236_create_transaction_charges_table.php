@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**
  * This is NOT a freeware, use is subject to license terms.
  *
@@ -20,7 +22,6 @@ class CreateTransactionChargesTable extends Migration
     {
         Schema::create('transaction_charges', function (Blueprint $table) {
             $table->string('id', 64)->unique();
-            $table->unsignedBigInteger('user_id');
             $table->boolean('paid')->default(false)->nullable();//是否已付款
             $table->boolean('refunded')->default(false)->nullable();//是否存在退款信息
             $table->boolean('reversed')->default(false)->nullable();//订单是否撤销
@@ -43,8 +44,6 @@ class CreateTransactionChargesTable extends Migration
             $table->timestamp('time_paid')->nullable()->comment('订单支付完成时时间');//银联支付成功时间为接收异步通知的时间
             $table->softDeletes();
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 

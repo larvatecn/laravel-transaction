@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**
  * This is NOT a freeware, use is subject to license terms.
  *
@@ -21,7 +23,6 @@ class CreateTransactionRefundsTable extends Migration
     {
         Schema::create('transaction_refunds', function (Blueprint $table) {
             $table->string('id', 64)->unique();
-            $table->unsignedBigInteger('user_id');
             $table->string('charge_id', 64);//支付  charge 对象的  id
             $table->unsignedInteger('amount');//退款金额大于 0, 必须小于等于可退款金额，默认为全额退款。
             $table->string('status')->default(Refund::STATUS_PENDING);//退款状态（目前支持三种状态: pending: 处理中; succeeded: 成功; failed: 失败）。
@@ -38,8 +39,6 @@ class CreateTransactionRefundsTable extends Migration
             $table->timestamp('succeed_at', 0)->nullable();//退款成功的时间，用 Unix 时间戳表示。
             $table->softDeletes();
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users');
 
             $table->foreign('charge_id')->references('id')->on('transaction_charges');
         });

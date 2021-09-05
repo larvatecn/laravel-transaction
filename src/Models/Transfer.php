@@ -50,13 +50,14 @@ use Larva\Transaction\Transaction;
  * @property-read boolean $scheduled
  *
  * @property Model $order
- * @property \App\Models\User $user
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
 class Transfer extends Model
 {
     use SoftDeletes;
+    use Traits\DateTimeFormatter;
+    use Traits\UsingTimestampAsPrimaryKey;
 
     //付款状态
     public const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
@@ -92,7 +93,7 @@ class Transfer extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'channel', 'status', 'amount', 'currency', 'recipient_id', 'description', 'transaction_no',
+        'id', 'channel', 'status', 'amount', 'currency', 'recipient_id', 'description', 'transaction_no',
         'failure_msg', 'metadata', 'extra', 'transferred_at'
     ];
 
@@ -128,21 +129,10 @@ class Transfer extends Model
     {
         static::creating(function ($model) {
             /** @var Transfer $model */
-            $model->id = $model->generateId();
+            $model->id = $model->generateKey();
             $model->currency = $model->currency ?: 'CNY';
             $model->status = static::STATUS_SCHEDULED;
         });
-    }
-
-    /**
-     * 为数组 / JSON 序列化准备日期。
-     *
-     * @param DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date): string
-    {
-        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
 
     /**
@@ -152,18 +142,6 @@ class Transfer extends Model
     public function order(): MorphTo
     {
         return $this->morphTo();
-    }
-
-    /**
-     * Get the user that the charge belongs to.
-     *
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(
-            config('auth.providers.' . config('auth.guards.web.provider') . '.model')
-        );
     }
 
     /**
@@ -249,7 +227,7 @@ class Transfer extends Model
     public function send(): Transfer
     {
         if ($this->status == static::STATUS_SCHEDULED) {
-            $channel = Transaction::getChannel($this->channel);
+            $channel = Transaction::getGateway($this->channel);
             if ($this->channel == Transaction::CHANNEL_WECHAT) {
                 $config = [
                     'partner_trade_no' => $this->id,

@@ -28,7 +28,6 @@ use Larva\Transaction\Transaction;
 /**
  * 退款处理模型
  * @property string $id
- * @property int $user_id
  * @property int $charge_id
  * @property int $amount
  * @property string $status
@@ -46,7 +45,6 @@ use Larva\Transaction\Transaction;
  * @property CarbonInterface|null $succeed_at 成功时间
  *
  * @property Charge $charge
- * @property \App\Models\User $user
  * @property-read boolean $succeed
  *
  * @author Tongle Xu <xutongle@gmail.com>
@@ -54,6 +52,8 @@ use Larva\Transaction\Transaction;
 class Refund extends Model
 {
     use SoftDeletes;
+    use Traits\DateTimeFormatter;
+    use Traits\UsingTimestampAsPrimaryKey;
 
     //退款状态
     public const STATUS_PENDING = 'pending';
@@ -92,7 +92,7 @@ class Refund extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg', 'charge_order_id',
+        'id', 'charge_id', 'amount', 'status', 'description', 'failure_code', 'failure_msg', 'charge_order_id',
         'transaction_no', 'funding_source', 'metadata', 'extra', 'succeed_at'
     ];
 
@@ -129,31 +129,10 @@ class Refund extends Model
     {
         static::creating(function ($model) {
             /** @var Refund $model */
-            $model->id = $model->generateId();
+            $model->id = $model->generateKey();
             $model->status = static::STATUS_PENDING;
             $model->funding_source = $model->getFundingSource();
         });
-    }
-
-    /**
-     * 为数组 / JSON 序列化准备日期。
-     *
-     * @param DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date): string
-    {
-        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
-    }
-
-    /**
-     * Get the user that the charge belongs to.
-     *
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(config('auth.providers.' . config('auth.guards.web.provider') . '.model'));
     }
 
     /**
@@ -164,24 +143,6 @@ class Refund extends Model
     public function charge(): BelongsTo
     {
         return $this->belongsTo(Charge::class);
-    }
-
-    /**
-     * 生成流水号
-     * @return string
-     */
-    protected function generateId(): string
-    {
-        $i = rand(0, 9999);
-        do {
-            if (9999 == $i) {
-                $i = 0;
-            }
-            $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where($this->primaryKey, $id)->exists();
-        } while ($row);
-        return $id;
     }
 
     /**
@@ -240,7 +201,7 @@ class Refund extends Model
     public function send(): Refund
     {
         $this->charge->update(['refunded' => true, 'amount_refunded' => $this->charge->amount_refunded + $this->amount]);
-        $channel = Transaction::getChannel($this->charge->trade_channel);
+        $channel = Transaction::getGateway($this->charge->trade_channel);
         if ($this->charge->trade_channel == Transaction::CHANNEL_WECHAT) {
             $refundAccount = 'REFUND_SOURCE_RECHARGE_FUNDS';
             if ($this->funding_source == Refund::FUNDING_SOURCE_UNSETTLED) {
@@ -260,7 +221,7 @@ class Refund extends Model
                 $response = $channel->refund($order);
                 $this->markRefunded($response->transaction_id, $response->toArray());
             } catch (Exception $exception) {//设置失败
-                $this->markFailure('FAIL', $exception->getMessage());
+                $this->markFailed('FAIL', $exception->getMessage());
             }
         } elseif ($this->charge->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order = [
@@ -275,7 +236,7 @@ class Refund extends Model
                 $response = $channel->refund($order);
                 $this->markRefunded($response->trade_no, $response->toArray());
             } catch (Exception $exception) {//设置失败
-                $this->markFailure('FAIL', $exception->getMessage());
+                $this->markFailed('FAIL', $exception->getMessage());
             }
         }
         return $this;

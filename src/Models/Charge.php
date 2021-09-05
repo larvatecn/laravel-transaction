@@ -42,7 +42,6 @@ use Yansongda\Supports\Collection;
 /**
  * 支付模型
  * @property string $id
- * @property int $user_id 用户ID
  * @property boolean $reversed 已撤销
  * @property boolean $refunded 已退款
  * @property string $trade_channel 支付渠道
@@ -63,7 +62,6 @@ use Yansongda\Supports\Collection;
  * @property array $metadata 元数据
  * @property array $extra 渠道数据
  *
- * @property \App\Models\User $user
  * @property Model $order 触发该收款的订单模型
  * @property Refund $refunds
  *
@@ -80,6 +78,8 @@ use Yansongda\Supports\Collection;
 class Charge extends Model
 {
     use SoftDeletes;
+    use Traits\DateTimeFormatter;
+    use Traits\UsingTimestampAsPrimaryKey;
 
     /**
      * The table associated with the model.
@@ -109,7 +109,7 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'amount', 'currency', 'subject', 'body',
+        'id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'amount', 'currency', 'subject', 'body',
         'client_ip', 'extra', 'time_paid', 'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
         'failure_msg', 'metadata', 'credential', 'description'
     ];
@@ -151,21 +151,10 @@ class Charge extends Model
     {
         static::creating(function ($model) {
             /** @var Charge $model */
-            $model->id = $model->generateId();
+            $model->id = $model->generateKey();
             $model->currency = $model->currency ?: 'CNY';
-            $model->time_expire = $model->freshTimestamp()->addHours(24);//过期时间24小时
+            $model->time_expire = $model->time_expire ?? $model->freshTimestamp()->addHours(24);//过期时间24小时
         });
-    }
-
-    /**
-     * 为数组 / JSON 序列化准备日期。
-     *
-     * @param DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date): string
-    {
-        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
 
     /**
@@ -203,16 +192,6 @@ class Charge extends Model
     }
 
     /**
-     * 获取用户关联
-     *
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(config('auth.providers.' . config('auth.guards.web.provider') . '.model'));
-    }
-
-    /**
      * 关联退款
      * @return HasMany
      */
@@ -240,24 +219,6 @@ class Charge extends Model
     public function getRefundableAttribute()
     {
         return $this->amount - $this->amount_refunded;
-    }
-
-    /**
-     * 生成流水号
-     * @return string
-     */
-    public function generateId(): string
-    {
-        $i = rand(0, 9999);
-        do {
-            if (9999 == $i) {
-                $i = 0;
-            }
-            $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-            $row = static::query()->where($this->primaryKey, '=', $id)->exists();
-        } while ($row);
-        return $id;
     }
 
     /**
@@ -301,7 +262,7 @@ class Charge extends Model
         } elseif ($this->reversed) {//已经撤销
             return true;
         } else {
-            $channel = Transaction::getChannel($this->trade_channel);
+            $channel = Transaction::getGateway($this->trade_channel);
             try {
                 if ($channel->close($this->id)) {
                     Event::dispatch(new ChargeClosed($this));
@@ -345,7 +306,7 @@ class Charge extends Model
      */
     public function unify()
     {
-        $channel = Transaction::getChannel($this->trade_channel);
+        $channel = Transaction::getGateway($this->trade_channel);
         $order = [
             'out_trade_no' => $this->id,
         ];
