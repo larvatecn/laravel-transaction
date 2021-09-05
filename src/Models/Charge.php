@@ -263,18 +263,18 @@ class Charge extends Model
 
     /**
      * 发起退款
-     * @param string $description 退款描述
+     * @param string $reason 退款原因
      * @return Refund
-     * @throws Exception
+     * @throws TransactionException
      */
-    public function refund(string $description): Refund
+    public function refund(string $reason): Refund
     {
         if ($this->paid) {
             /** @var Refund $refund */
             $refund = $this->refunds()->create([
                 'charge_id' => $this->id,
                 'amount' => $this->total_amount,
-                'reason' => $description,
+                'reason' => $reason,
             ]);
             $this->update(['state' => static::STATE_REFUND]);
             return $refund;
