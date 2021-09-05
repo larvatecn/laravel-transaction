@@ -28,6 +28,7 @@ use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeSucceeded;
+use Larva\Transaction\Jobs\CheckChargeJob;
 use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
@@ -171,6 +172,11 @@ class Charge extends Model
             $model->currency = $model->currency ?: 'CNY';
             $model->expired_at = $model->expired_at ?? $model->freshTimestamp()->addHours(24);//过期时间24小时
             $model->state = static::STATE_NOTPAY;
+        });
+        static::created(function (Charge $model) {
+            if (!empty($model->trade_channel) && !empty($model->trade_type)) {//不为空就预下单
+                $model->prePay();
+            }
         });
     }
 

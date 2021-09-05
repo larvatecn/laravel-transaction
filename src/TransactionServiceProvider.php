@@ -44,10 +44,6 @@ class TransactionServiceProvider extends ServiceProvider
                 'transaction-config'
             );
         }
-
-        Models\Charge::observe(Observers\ChargeObserver::class);
-        Models\Refund::observe(Observers\RefundObserver::class);
-        Models\Transfer::observe(Observers\TransferObserver::class);
     }
 
     /**

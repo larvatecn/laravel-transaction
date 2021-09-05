@@ -119,6 +119,10 @@ class Refund extends Model
             $model->id = $model->generateKey();
             $model->status = static::STATUS_PENDING;
         });
+        static::created(function (Refund $model) {
+            //委派任务
+            $model->gatewayHandle();
+        });
     }
 
     /**

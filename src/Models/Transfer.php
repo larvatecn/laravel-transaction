@@ -122,6 +122,10 @@ class Transfer extends Model
             $model->currency = $model->currency ?: 'CNY';
             $model->status = static::STATUS_SCHEDULED;
         });
+        static::created(function (Transfer $model) {
+            //委派任务
+            $model->gatewayHandle();
+        });
     }
 
     /**
