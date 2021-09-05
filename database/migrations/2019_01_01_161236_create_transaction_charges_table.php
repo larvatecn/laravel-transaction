@@ -40,7 +40,7 @@ class CreateTransactionChargesTable extends Migration
             $table->json('extra')->nullable();//特定渠道发起交易时需要的额外参数，以及部分渠道支付成功返回的额外参数
             $table->json('metadata')->nullable();//元数据
             $table->json('credential')->nullable();//支付凭证，用于客户端发起支付。
-            $table->timestamp('time_expire')->nullable()->comment('订单失效时间');
+            $table->timestamp('expired_at')->nullable()->comment('订单失效时间');
             $table->timestamp('succeed_at')->nullable()->comment('订单支付完成时时间');//银联支付成功时间为接收异步通知的时间
             $table->softDeletes();
             $table->timestamps();

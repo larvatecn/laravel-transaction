@@ -41,7 +41,7 @@ class CheckChargeJob implements ShouldQueue
     /**
      * @var Charge
      */
-    protected $charge;
+    protected Charge $charge;
 
     /**
      * Create a new job instance.
@@ -62,8 +62,8 @@ class CheckChargeJob implements ShouldQueue
     public function handle()
     {
         if (!$this->charge->paid) {
-            if (Carbon::parse($this->charge->time_expire)->diffInSeconds(Carbon::now()) < 0) {//过期订单直接关闭
-                $this->charge->markClose();
+            if (Carbon::parse($this->charge->expired_at)->diffInSeconds(Carbon::now()) < 0) {//过期订单直接关闭
+                $this->charge->markClosed();
             } else {//过一会再次查询
                 $this->release(2);
             }

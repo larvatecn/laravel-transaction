@@ -51,7 +51,6 @@ use Yansongda\Supports\Collection;
  * @property boolean $paid 是否支付成功
  * @property string $transaction_no 支付网关交易号
  * @property int $amount_refunded 已经退款的金额
- * @property CarbonInterface|null $time_expire 时间
  * @property string $client_ip 客户端IP
  * @property string $failure_code 失败代码
  * @property string $failure_msg 失败消息
@@ -63,7 +62,8 @@ use Yansongda\Supports\Collection;
  * @property Model $order 触发该收款的订单模型
  * @property Refund $refunds
  *
- * @property CarbonInterface $succeed_at 付款时间
+ * @property CarbonInterface|null $expired_at 过期时间
+ * @property CarbonInterface|null $succeed_at 付款时间
  * @property CarbonInterface $deleted_at 软删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
@@ -108,7 +108,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'amount', 'currency', 'subject', 'body',
-        'client_ip', 'extra', 'succeed_at', 'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
+        'client_ip', 'extra', 'succeed_at', 'expired_at', 'transaction_no', 'amount_refunded', 'failure_code',
         'failure_msg', 'metadata', 'credential', 'description'
     ];
 
@@ -137,7 +137,7 @@ class Charge extends Model
         'updated_at',
         'deleted_at',
         'succeed_at',
-        'time_expire',
+        'expired_at',
     ];
 
     /**
@@ -151,7 +151,7 @@ class Charge extends Model
             /** @var Charge $model */
             $model->id = $model->generateKey();
             $model->currency = $model->currency ?: 'CNY';
-            $model->time_expire = $model->time_expire ?? $model->freshTimestamp()->addHours(24);//过期时间24小时
+            $model->expired_at = $model->expired_at ?? $model->freshTimestamp()->addHours(24);//过期时间24小时
         });
     }
 
@@ -312,8 +312,8 @@ class Charge extends Model
             $order['spbill_create_ip'] = $this->client_ip;
             $order['total_fee'] = $this->amount;//总金额，单位分
             $order['body'] = $this->description;
-            if ($this->time_expire) {
-                $order['time_expire'] = $this->time_expire->format('YmdHis');
+            if ($this->expired_at) {
+                $order['time_expire'] = $this->expired_at->format('YmdHis');
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
@@ -322,8 +322,8 @@ class Charge extends Model
             if ($this->description) {
                 $order['body'] = $this->description;
             }
-            if ($this->time_expire) {
-                $order['time_expire'] = $this->time_expire;
+            if ($this->expired_at) {
+                $order['time_expire'] = $this->expired_at;
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
             if ($this->trade_type == 'wap') {
