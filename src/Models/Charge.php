@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
-use Larva\Transaction\Events\ChargeShipped;
+use Larva\Transaction\Events\ChargeSucceeded;
 use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
@@ -50,14 +50,14 @@ use Larva\Transaction\Transaction;
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface|null $updated_at 更新时间
  * @property CarbonInterface|null $deleted_at 软删除时间
+ * @property Model $order 触发该收款的订单模型
+ * @property Refund $refunds 退款实例
  *
  * @property-read bool $paid 是否已付款
  * @property-read bool $refunded 是否有退款
  * @property-read bool $reversed 是否撤销
  * @property-read int $refundedAmount 已退款金额
  * @property-read string $stateDesc 状态描述
- * @property Model $order 触发该收款的订单模型
- * @property Refund $refunds 退款实例
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
@@ -253,7 +253,7 @@ class Charge extends Model
             'succeed_at' => $this->freshTimestamp(),
             'state' => static::STATE_SUCCESS,
         ]);
-        Event::dispatch(new ChargeShipped($this));
+        Event::dispatch(new ChargeSucceeded($this));
         return $state;
     }
 

@@ -32,6 +32,6 @@ class RefundObserver
      */
     public function created(Refund $refund)
     {
-        $refund->send();
+        $refund->gatewayHandle();
     }
 }

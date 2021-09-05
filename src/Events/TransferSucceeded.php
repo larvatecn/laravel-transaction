@@ -15,28 +15,28 @@ declare(strict_types=1);
 namespace Larva\Transaction\Events;
 
 use Illuminate\Queue\SerializesModels;
-use Larva\Transaction\Models\Charge;
+use Larva\Transaction\Models\Transfer;
 
 /**
- * 交易已支付
+ * 企业付款成功事件
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
-class ChargeShipped
+class TransferSucceeded
 {
     use SerializesModels;
 
     /**
-     * @var Charge
+     * @var Transfer
      */
-    public $charge;
+    public Transfer $transfer;
 
     /**
-     * ChargeShipped constructor.
-     * @param Charge $charge
+     * TransferShipped constructor.
+     * @param Transfer $transfer
      */
-    public function __construct(Charge $charge)
+    public function __construct(Transfer $transfer)
     {
-        $this->charge = $charge;
+        $this->transfer = $transfer;
     }
 }

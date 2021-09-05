@@ -32,6 +32,6 @@ class TransferObserver
      */
     public function created(Transfer $transfer)
     {
-        $transfer->send();
+        $transfer->gatewayHandle();
     }
 }

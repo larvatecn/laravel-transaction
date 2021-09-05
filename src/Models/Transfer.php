@@ -203,7 +203,7 @@ class Transfer extends Model
      * @return Transfer
      * @throws Exception
      */
-    public function send(): Transfer
+    public function gatewayHandle(): Transfer
     {
         if ($this->status == static::STATUS_SCHEDULED) {
             $channel = Transaction::getChannel($this->channel);

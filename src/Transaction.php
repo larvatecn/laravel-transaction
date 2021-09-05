@@ -16,6 +16,9 @@ namespace Larva\Transaction;
 
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Route;
+use Larva\Transaction\Models\Charge;
+use Larva\Transaction\Models\Refund;
+use Larva\Transaction\Models\Transfer;
 use Yansongda\Pay\Provider\Alipay;
 use Yansongda\Pay\Provider\Wechat;
 
@@ -57,6 +60,53 @@ class Transaction extends Facade
     public static function wechat(): Wechat
     {
         return app('transaction.wechat');
+    }
+
+    /**
+     * 获取交易网关
+     * @param string $channel
+     * @return Alipay|Wechat
+     * @throws TransactionException
+     */
+    public static function getGateway(string $channel)
+    {
+        if ($channel == static::CHANNEL_WECHAT) {
+            return static::wechat();
+        } elseif ($channel == static::CHANNEL_ALIPAY) {
+            return static::alipay();
+        } else {
+            throw new TransactionException('The channel does not exist.');
+        }
+    }
+
+    /**
+     * 获取收款单
+     * @param string $id
+     * @return Charge|null
+     */
+    public static function getCharge(string $id): ?Charge
+    {
+        return Charge::where('id', $id)->first();
+    }
+
+    /**
+     * 获取退款单
+     * @param string $id
+     * @return Refund|null
+     */
+    public static function getRefund(string $id): ?Refund
+    {
+        return Refund::where('id', $id)->first();
+    }
+
+    /**
+     * 获取付款单
+     * @param string $id
+     * @return Transfer|null
+     */
+    public static function getTransfer(string $id): ?Transfer
+    {
+        return Transfer::where('id', $id)->first();
     }
 
     /**

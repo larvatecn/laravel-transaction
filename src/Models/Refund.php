@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -32,7 +33,7 @@ use Larva\Transaction\Transaction;
  * @property string $id 退款流水号
  * @property int $charge_id 付款ID
  * @property int $amount 退款资金
- * @property string $state 退款状态
+ * @property string $status 退款状态
  * @property string $description 退款描述
  * @property Failure $failure 退款失败对象
  * @property string $transaction_no 网关流水号
@@ -52,10 +53,12 @@ class Refund extends Model
 {
     use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
 
-    //退款状态
-    public const STATE_PENDING = 'pending';
-    public const STATE_SUCCEEDED = 'succeeded';
-    public const STATE_FAILED = 'failed';
+    // 退款状态机
+    public const STATUS_PENDING = 'PENDING';//待处理
+    public const STATUS_SUCCESS = 'SUCCESS';//退款成功
+    public const STATUS_CLOSED = 'CLOSED';//退款关闭
+    public const STATUS_PROCESSING = 'PROCESSING';//退款处理中
+    public const STATUS_ABNORMAL = 'ABNORMAL';//退款异常
 
     /**
      * The table associated with the model.
@@ -124,7 +127,6 @@ class Refund extends Model
         });
     }
 
-
     /**
      * 关联收单
      *
@@ -141,7 +143,12 @@ class Refund extends Model
      */
     public function getSucceedAttribute(): bool
     {
-        return $this->status == self::STATUS_SUCCEEDED;
+        return $this->status == self::STATUS_SUCCESS;
+    }
+
+    public function markClosed()
+    {
+
     }
 
     /**
@@ -152,7 +159,7 @@ class Refund extends Model
      */
     public function markFailed(string $code, string $msg): bool
     {
-        $succeed = $this->update(['status' => self::STATUS_FAILED, 'failure_code' => $code, 'failure_msg' => $msg]);
+        $succeed = $this->update(['status' => self::STATUS_ABNORMAL, 'failure_code' => $code, 'failure_msg' => $msg]);
         $this->charge->update(['amount_refunded' => $this->charge->amount_refunded - $this->amount]);//可退款金额，减回去
         Event::dispatch(new RefundFailed($this));
         return $succeed;
@@ -164,12 +171,12 @@ class Refund extends Model
      * @param array $params
      * @return bool
      */
-    public function markRefunded(string $transactionNo, array $params = []): bool
+    public function markSucceed(string $transactionNo, array $params = []): bool
     {
         if ($this->succeed) {
             return true;
         }
-        $this->update(['status' => self::STATUS_SUCCEEDED, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $params]);
+        $this->update(['status' => self::STATUS_SUCCESS, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $params]);
         Event::dispatch(new RefundSucceed($this));
         return $this->succeed;
     }
@@ -179,19 +186,17 @@ class Refund extends Model
      * @return Refund
      * @throws Exception
      */
-    public function send(): Refund
+    public function gatewayHandle(): Refund
     {
         $this->charge->update(['refunded' => true, 'amount_refunded' => $this->charge->amount_refunded + $this->amount]);
-        $channel = Transaction::getChannel($this->charge->trade_channel);
+
+        $channel = Transaction::getGateway($this->charge->trade_channel);
         if ($this->charge->trade_channel == Transaction::CHANNEL_WECHAT) {
             $refundAccount = 'REFUND_SOURCE_RECHARGE_FUNDS';
-            if ($this->funding_source == Refund::FUNDING_SOURCE_UNSETTLED) {
-                $refundAccount = 'REFUND_SOURCE_UNSETTLED_FUNDS';
-            }
             $order = [
                 'out_refund_no' => $this->id,
                 'out_trade_no' => $this->charge->id,
-                'total_fee' => $this->charge->amount,
+                'total_fee' => $this->charge->total_amount,
                 'refund_fee' => $this->amount,
                 'refund_fee_type' => $this->charge->currency,
                 'refund_desc' => $this->description,
@@ -200,9 +205,9 @@ class Refund extends Model
             ];
             try {
                 $response = $channel->refund($order);
-                $this->markRefunded($response->transaction_id, $response->toArray());
+                $this->markSucceed($response->transaction_id, $response->toArray());
             } catch (Exception $exception) {//设置失败
-                $this->markFailure('FAIL', $exception->getMessage());
+                $this->markFailed('FAIL', $exception->getMessage());
             }
         } elseif ($this->charge->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order = [
@@ -215,9 +220,9 @@ class Refund extends Model
             ];
             try {
                 $response = $channel->refund($order);
-                $this->markRefunded($response->trade_no, $response->toArray());
+                $this->markSucceed($response->trade_no, $response->toArray());
             } catch (Exception $exception) {//设置失败
-                $this->markFailure('FAIL', $exception->getMessage());
+                $this->markFailed('FAIL', $exception->getMessage());
             }
         }
         return $this;

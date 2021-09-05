@@ -22,14 +22,14 @@ use Larva\Transaction\Models\Refund;
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
-class RefundSucceed
+class RefundSucceeded
 {
     use SerializesModels;
 
     /**
      * @var Refund
      */
-    public $refund;
+    public Refund $refund;
 
     /**
      * RefundSuccess constructor.
