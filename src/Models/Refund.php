@@ -5,8 +5,13 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types=1);
-
+declare(strict_types=1);
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -51,13 +56,13 @@ class Refund extends Model
     use SoftDeletes;
 
     //退款状态
-    const STATUS_PENDING = 'pending';
-    const STATUS_SUCCEEDED = 'succeeded';
-    const STATUS_FAILED = 'failed';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_SUCCEEDED = 'succeeded';
+    public const STATUS_FAILED = 'failed';
 
     //退款资金来源
-    const FUNDING_SOURCE_UNSETTLED = 'unsettled_funds';//使用未结算资金退款
-    const FUNDING_SOURCE_RECHARGE = 'recharge_funds';//使用可用余额退款
+    public const FUNDING_SOURCE_UNSETTLED = 'unsettled_funds';//使用未结算资金退款
+    public const FUNDING_SOURCE_RECHARGE = 'recharge_funds';//使用可用余额退款
 
     /**
      * The table associated with the model.
@@ -257,7 +262,7 @@ class Refund extends Model
             } catch (Exception $exception) {//设置失败
                 $this->markFailure('FAIL', $exception->getMessage());
             }
-        } else if ($this->charge->trade_channel == Transaction::CHANNEL_ALIPAY) {
+        } elseif ($this->charge->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order = [
                 'out_trade_no' => $this->charge->id,
                 'trade_no' => $this->charge->transaction_no,

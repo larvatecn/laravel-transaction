@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,7 +19,7 @@ class CreateTransactionChargesTable extends Migration
     public function up()
     {
         Schema::create('transaction_charges', function (Blueprint $table) {
-            $table->string('id',64)->unique();
+            $table->string('id', 64)->unique();
             $table->unsignedBigInteger('user_id');
             $table->boolean('paid')->default(false)->nullable();//是否已付款
             $table->boolean('refunded')->default(false)->nullable();//是否存在退款信息

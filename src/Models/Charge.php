@@ -5,8 +5,13 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types=1);
-
+declare(strict_types=1);
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -41,7 +46,7 @@ use Yansongda\Supports\Collection;
  * @property boolean $reversed 已撤销
  * @property boolean $refunded 已退款
  * @property string $trade_channel 支付渠道
- * @property string $trade_type  支付类型
+ * @property string $trade_type 支付类型
  * @property string $subject 支付标题
  * @property string $order_id 订单ID
  * @property float $amount 支付金额，单位分
@@ -293,7 +298,7 @@ class Charge extends Model
         if ($this->paid) {
             $this->update(['failure_code' => 'FAIL', 'failure_msg' => '已支付，无法撤销']);
             return false;
-        } else if ($this->reversed) {//已经撤销
+        } elseif ($this->reversed) {//已经撤销
             return true;
         } else {
             $channel = Transaction::getChannel($this->trade_channel);
@@ -331,7 +336,7 @@ class Charge extends Model
             $this->update(['refunded' => true]);
             return $refund;
         }
-        throw new Exception ('Not paid, no refund.');
+        throw new Exception('Not paid, no refund.');
     }
 
     /**
@@ -353,7 +358,7 @@ class Charge extends Model
                 $order['time_expire'] = $this->time_expire->format('YmdHis');
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
-        } else if ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
+        } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order['total_amount'] = $this->amount / 100;//总钱数，单位元
             $order['subject'] = $this->subject;
             if ($this->description) {
@@ -371,11 +376,11 @@ class Charge extends Model
         $credential = $channel->pay($this->trade_type, $order);
         if ($credential instanceof Collection) {
             $credential = $credential->toArray();
-        } else if ($credential instanceof RedirectResponse) {
+        } elseif ($credential instanceof RedirectResponse) {
             $credential = ['url' => $credential->getTargetUrl()];
-        } else if ($credential instanceof JsonResponse) {
+        } elseif ($credential instanceof JsonResponse) {
             $credential = json_decode($credential->getContent(), true);
-        } else if ($credential instanceof Response) {//此处判断一定要在最后
+        } elseif ($credential instanceof Response) {//此处判断一定要在最后
             if ($this->trade_channel == Transaction::CHANNEL_ALIPAY && $this->trade_type == 'app') {
                 $params = [];
                 parse_str($credential->getContent(), $params);

@@ -5,8 +5,13 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types = 1);
-
+declare(strict_types=1);
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -77,8 +82,9 @@ class PaymentController
             }
             $this->response->view('transaction:return', ['charge' => $charge]);
         }
-        throw (new ModelNotFoundException)->setModel(
-            Charge::class, $id
+        throw (new ModelNotFoundException())->setModel(
+            Charge::class,
+            $id
         );
     }
 
@@ -93,8 +99,9 @@ class PaymentController
         if ($charge) {
             return $this->response->json($charge->toArray());
         }
-        throw (new ModelNotFoundException)->setModel(
-            Charge::class, $id
+        throw (new ModelNotFoundException())->setModel(
+            Charge::class,
+            $id
         );
     }
 }

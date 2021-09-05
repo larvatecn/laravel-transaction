@@ -5,8 +5,13 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types = 1);
-
+declare(strict_types=1);
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -40,7 +45,7 @@ class NotifyController
                     $charge->markPaid($params['transaction_id']);
                 }
                 Log::debug('Wechat notify', $params->all());
-            } else if ($channel == Transaction::CHANNEL_ALIPAY) {
+            } elseif ($channel == Transaction::CHANNEL_ALIPAY) {
                 $params = $pay->verify(); // 验签
                 if ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED') {
                     $charge = Transaction::getCharge($params['out_trade_no']);

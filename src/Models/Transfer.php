@@ -5,8 +5,13 @@
  * @link http://www.larva.com.cn/
  */
 
-declare (strict_types=1);
-
+declare(strict_types=1);
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ * @link http://www.larva.com.cn/
+ */
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -54,10 +59,10 @@ class Transfer extends Model
     use SoftDeletes;
 
     //付款状态
-    const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
-    const STATUS_PENDING = 'pending';//pending: 处理中
-    const STATUS_PAID = 'paid';//paid: 付款成功
-    const STATUS_FAILED = 'failed';//failed: 付款失败
+    public const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
+    public const STATUS_PENDING = 'pending';//pending: 处理中
+    public const STATUS_PAID = 'paid';//paid: 付款成功
+    public const STATUS_FAILED = 'failed';//failed: 付款失败
 
     /**
      * The table associated with the model.
@@ -264,7 +269,7 @@ class Transfer extends Model
                 } catch (Exception $exception) {//设置付款失败
                     $this->markFailed('FAIL', $exception->getMessage());
                 }
-            } else if ($this->channel == Transaction::CHANNEL_ALIPAY) {
+            } elseif ($this->channel == Transaction::CHANNEL_ALIPAY) {
                 $config = [
                     'out_biz_no' => $this->id,
                     'payee_type' => $this->extra['recipient_account_type'],
