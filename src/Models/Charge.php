@@ -15,11 +15,9 @@ declare(strict_types=1);
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
-use DateTimeInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -65,7 +63,7 @@ use Yansongda\Supports\Collection;
  * @property Model $order 触发该收款的订单模型
  * @property Refund $refunds
  *
- * @property CarbonInterface $time_paid 付款时间
+ * @property CarbonInterface $succeed_at 付款时间
  * @property CarbonInterface $deleted_at 软删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
@@ -110,7 +108,7 @@ class Charge extends Model
      */
     public $fillable = [
         'id', 'paid', 'refunded', 'reversed', 'trade_channel', 'trade_type', 'amount', 'currency', 'subject', 'body',
-        'client_ip', 'extra', 'time_paid', 'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
+        'client_ip', 'extra', 'succeed_at', 'time_expire', 'transaction_no', 'amount_refunded', 'failure_code',
         'failure_msg', 'metadata', 'credential', 'description'
     ];
 
@@ -138,7 +136,7 @@ class Charge extends Model
         'created_at',
         'updated_at',
         'deleted_at',
-        'time_paid',
+        'succeed_at',
         'time_expire',
     ];
 
@@ -244,7 +242,7 @@ class Charge extends Model
         if ($this->paid) {
             return true;
         }
-        $paid = $this->update(['transaction_no' => $transactionNo, 'time_paid' => $this->freshTimestamp(), 'paid' => true]);
+        $paid = $this->update(['transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'paid' => true]);
         Event::dispatch(new ChargeShipped($this));
         return $paid;
     }
@@ -288,7 +286,6 @@ class Charge extends Model
         if ($this->paid) {
             /** @var Refund $refund */
             $refund = $this->refunds()->create([
-                'user_id' => $this->user_id,
                 'amount' => $this->amount,
                 'description' => $description,
                 'charge_id' => $this->id,

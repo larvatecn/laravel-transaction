@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
-use DateTimeInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
