@@ -71,15 +71,15 @@ class Order extends Model {
     /**
      * 设置交易成功
      */
-    public function setSucceeded()
+    public function markSucceeded()
     {
-        $this->update(['pay_channel' => $this->charge->channel, 'status' => static::STATUS_PAY_SUCCEEDED, 'pay_succeeded_at' => $this->freshTimestamp()]);
+        $this->update(['pay_channel' => $this->charge->trade_channel, 'status' => static::STATUS_PAY_SUCCEEDED, 'pay_succeeded_at' => $this->freshTimestamp()]);
     }
 
     /**
      * 设置交易失败
      */
-    public function setFailure()
+    public function markFailed()
     {
         $this->update(['status' => static::STATUS_FAILED]);
     }
@@ -106,6 +106,3 @@ class Order extends Model {
     }
 }
 ```
-
-
-
