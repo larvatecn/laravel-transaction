@@ -59,10 +59,10 @@ class Transfer extends Model
     use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
 
     //付款状态
-    public const STATE_SCHEDULED = 'scheduled';//scheduled: 待发送
-    public const STATE_PENDING = 'pending';//pending: 处理中
-    public const STATE_PAID = 'paid';//paid: 付款成功
-    public const STATE_FAILED = 'failed';//failed: 付款失败
+    public const STATUS_SCHEDULED = 'scheduled';//scheduled: 待发送
+    public const STATUS_PENDING = 'pending';//pending: 处理中
+    public const STATUS_PAID = 'paid';//paid: 付款成功
+    public const STATUS_FAILED = 'failed';//failed: 付款失败
 
     /**
      * The table associated with the model.
@@ -85,7 +85,7 @@ class Transfer extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'user_id', 'channel', 'status', 'amount', 'currency', 'recipient_id', 'description', 'transaction_no',
+        'id', 'channel', 'status', 'amount', 'currency', 'recipient_id', 'description', 'transaction_no',
         'failure_msg', 'metadata', 'extra', 'transferred_at'
     ];
 
@@ -106,10 +106,7 @@ class Transfer extends Model
      * @var array
      */
     protected $dates = [
-        'created_at',
-        'updated_at',
-        'deleted_at',
-        'transferred_at',
+        'created_at', 'updated_at', 'deleted_at', 'transferred_at',
     ];
 
     /**
@@ -121,6 +118,7 @@ class Transfer extends Model
     {
         static::creating(function ($model) {
             /** @var Transfer $model */
+            $model->id = $model->generateKey();
             $model->currency = $model->currency ?: 'CNY';
             $model->status = static::STATUS_SCHEDULED;
         });
