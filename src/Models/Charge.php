@@ -328,7 +328,7 @@ class Charge extends Model
      * @return bool
      * @throws Exception
      */
-    public function closed(): bool
+    public function close(): bool
     {
         if ($this->state == static::STATE_NOTPAY) {
             $channel = Transaction::getGateway($this->trade_channel);
