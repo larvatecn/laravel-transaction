@@ -69,19 +69,14 @@ class Order extends Model {
 
     /**
      * 发起退款
-     * @param string $description 退款描述
+     * @param string $reason 退款描述
      * @return Model|Refund
      * @throws Exception
      */
-    public function setRefund($description)
+    public function setRefund(string $reason)
     {
         if ($this->paid && $this->charge->allowRefund) {
-            $refund = $this->charge->refunds()->create([
-                'amount' => $this->amount,
-                'description' => $description,
-                'charge_id' => $this->charge->id,
-                'charge_order_id' => $this->id,
-            ]);
+            $refund = $this->charge->refund($reason);
             $this->update(['refunded' => true]);
             return $refund;
         }

@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -378,8 +379,8 @@ class Charge extends Model
             if ($this->expired_at) {
                 $order['time_expire'] = $this->expired_at->format('YmdHis');
             }
-            if ($this->trade_type == 'mp') {
-                $order['openid'] = $this->metadata['openid'];
+            if ($this->metadata['openid']) {
+                $order['openid'] = $this->metadata['openid'] ?? '';
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
