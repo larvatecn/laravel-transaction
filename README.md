@@ -43,7 +43,7 @@ class Order extends Model {
 
     /**
      * Get the entity's charge.
-     *
+     * 这里关联付款模型
      * @return \Illuminate\Database\Eloquent\Relations\MorphOne
      */
     public function charge()
@@ -56,7 +56,7 @@ class Order extends Model {
      */
     public function markSucceeded()
     {
-        $this->update(['pay_channel' => $this->charge->trade_channel, 'status' => static::STATUS_PAY_SUCCEEDED, 'pay_succeeded_at' => $this->freshTimestamp()]);
+        $this->update(['channel' => $this->charge->trade_channel, 'status' => static::STATUS_PAY_SUCCEEDED, 'succeeded_at' => $this->freshTimestamp()]);
     }
 
     /**
@@ -69,19 +69,14 @@ class Order extends Model {
 
     /**
      * 发起退款
-     * @param string $description 退款描述
+     * @param string $reason 退款描述
      * @return Model|Refund
      * @throws Exception
      */
-    public function setRefund($description)
+    public function refund(string $reason)
     {
         if ($this->paid && $this->charge->allowRefund) {
-            $refund = $this->charge->refunds()->create([
-                'amount' => $this->amount,
-                'description' => $description,
-                'charge_id' => $this->charge->id,
-                'charge_order_id' => $this->id,
-            ]);
+            $refund = $this->charge->refund($reason);
             $this->update(['refunded' => true]);
             return $refund;
         }
