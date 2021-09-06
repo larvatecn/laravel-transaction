@@ -44,10 +44,7 @@ class ChargeController extends AdminController
             });
             $grid->quickSearch(['id', 'transaction_no', 'order_id']);
             $grid->model()->orderBy('id', 'desc');
-
             $grid->column('id', '流水号')->sortable();
-            $grid->column('transaction_no', '网关流水号');
-
             $grid->column('trade_channel', '支付渠道');
             $grid->column('trade_type', '支付类型');
             $grid->column('transaction_no', '网关流水号');

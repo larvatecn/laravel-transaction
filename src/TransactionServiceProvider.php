@@ -14,6 +14,7 @@ declare(strict_types=1);
  */
 namespace Larva\Transaction;
 
+use Illuminate\Container\Container;
 use Illuminate\Support\ServiceProvider;
 use Yansongda\Pay\Pay;
 
@@ -35,8 +36,8 @@ class TransactionServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
             $this->publishes([
-                __DIR__ . '/../resources/views' => base_path('resources/views/vendor/transaction'),
-            ], 'transaction-views');
+                __DIR__.'/../resources/views' => base_path('resources/views/vendor/transaction'),
+            ], 'laravel-assets');
             $this->publishes(
                 [
                 __DIR__ . '/../config/transaction.php' => config_path('transaction.php'),],
@@ -49,6 +50,7 @@ class TransactionServiceProvider extends ServiceProvider
      * Register the service provider.
      *
      * @return void
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
@@ -57,7 +59,7 @@ class TransactionServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(dirname(__DIR__) . '/config/transaction.php', 'transaction');
 
-        Pay::config(config('transaction'));
+        Pay::config(Container::getInstance()->make('config')->get('transaction'));
 
         $this->app->singleton('transaction.alipay', function () {
             return Pay::alipay();

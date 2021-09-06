@@ -12,12 +12,10 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Transaction;
 use Symfony\Component\HttpFoundation\Response;
 

@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -44,7 +43,7 @@ use Larva\Transaction\TransactionException;
  * @property string $currency 支付币种
  * @property string $state 交易状态
  * @property string $client_ip 客户端IP
- * @property array $payer 支付者信息
+ * @property array $metadata 元信息
  * @property array $credential 客户端支付凭证
  * @property Failure $failure 错误信息
  * @property array $extra 网关返回的信息
@@ -358,11 +357,8 @@ class Charge extends Model
     public function prePay()
     {
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
-
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
-
-
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
             if ($this->trade_type == 'wap') {
                 $order['return_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
