@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -28,6 +29,10 @@ use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 use Larva\Transaction\TransactionException;
+use Yansongda\Supports\Collection;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * 支付模型
@@ -352,17 +357,63 @@ class Charge extends Model
 
     /**
      * 订单付款预下单
-     * @throws InvalidGatewayException
      */
     public function prePay()
     {
+        $order = [
+            'out_trade_no' => $this->id,
+        ];
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
+            $order['total_fee'] = $this->total_amount;//总金额，单位分
+            $order['description'] = $this->description;
+            $order['amount'] = [
+                'total' => $this->total_amount,//总金额，单位分
+                'currency' => $this->currency,
+            ];
+            $order['scene_info'] = [
+                'payer_client_ip' => $this->client_ip,
+            ];
+            if ($this->metadata['openid']) {
+                $order['payer'] = [
+                    'openid' => $this->metadata['openid'],
+                ];
+            }
+            if ($this->expired_at) {
+                $order['time_expire'] = $this->expired_at->toRfc3339String();
+            }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
+            $channel = Transaction::wechat();
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
+            $order['total_amount'] = $this->total_amount / 100;//总钱数，单位元
+            $order['subject'] = $this->subject;
+            if ($this->description) {
+                $order['body'] = $this->description;
+            }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
             if ($this->trade_type == 'wap') {
                 $order['return_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
             }
+            $channel = Transaction::alipay();
+        } else {
+            throw new TransactionException('The channel does not exist.');
         }
+        // 获取支付凭证
+        $credential = $channel->__call($this->trade_type, $order);
+        if ($credential instanceof Collection) {
+            $credential = $credential->toArray();
+        } elseif ($credential instanceof RedirectResponse) {
+            $credential = ['url' => $credential->getTargetUrl()];
+        } elseif ($credential instanceof JsonResponse) {
+            $credential = json_decode($credential->getContent(), true);
+        } elseif ($credential instanceof Response) {//此处判断一定要在最后
+            if ($this->trade_channel == Transaction::CHANNEL_ALIPAY && $this->trade_type == 'app') {
+                $params = [];
+                parse_str($credential->getContent(), $params);
+                $credential = $params;
+            } else {//WEB H5
+                $credential = ['html' => $credential->getContent()];
+            }
+        }
+        $this->updateQuietly(['credential' => $credential]);
     }
 }
