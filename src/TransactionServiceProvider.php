@@ -37,7 +37,7 @@ class TransactionServiceProvider extends ServiceProvider
 
             $this->publishes([
                 __DIR__.'/../resources/views' => base_path('resources/views/vendor/transaction'),
-            ], 'transaction-views');
+            ], 'laravel-assets');
             $this->publishes(
                 [
                 __DIR__ . '/../config/transaction.php' => config_path('transaction.php'),],
