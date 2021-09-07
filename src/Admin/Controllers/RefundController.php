@@ -7,7 +7,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Admin\Controllers;
 
 use Dcat\Admin\Http\Controllers\AdminController;
@@ -40,9 +39,11 @@ class RefundController extends AdminController
         return Grid::make(new Refund(), function (Grid $grid) {
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id', '流水号');
+                $filter->equal('charge_id', '支付流水号');
                 $filter->equal('transaction_no', '网关流水号');
             });
-            $grid->quickSearch(['id', 'transaction_no']);
+
+            $grid->quickSearch(['id', 'transaction_no', 'charge_id']);
             $grid->model()->orderBy('id', 'desc');
 
             $grid->column('id', '流水号')->sortable();
