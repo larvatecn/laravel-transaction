@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -104,6 +105,18 @@ class Refund extends Model
     ];
 
     /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $statusMaps = [
+        self::STATUS_PENDING => '待处理',
+        self::STATUS_SUCCESS => '退款成功',
+        self::STATUS_CLOSED => '退款关闭',
+        self::STATUS_PROCESSING => '退款处理中',
+        self::STATUS_ABNORMAL => '退款异常',
+    ];
+
+    /**
      * The "booting" method of the model.
      *
      * @return void
@@ -115,8 +128,18 @@ class Refund extends Model
             $model->status = static::STATUS_PENDING;
         });
         static::created(function (Refund $model) {
+            Charge::query()->where('id', $model->charge_id)->increment('refunded_amount', $model->amount, ['state' => Charge::STATE_REFUND]);
             HandleRefundJob::dispatch($model)->delay(1);
         });
+    }
+
+    /**
+     * 获取 Status Label
+     * @return string[]
+     */
+    public static function getStatusMaps(): array
+    {
+        return static::$statusMaps;
     }
 
     /**
@@ -147,6 +170,7 @@ class Refund extends Model
     public function markFailed(string $code, string $desc): bool
     {
         $succeed = $this->updateQuietly(['status' => self::STATUS_ABNORMAL, 'failure' => ['code' => $code, 'desc' => $desc]]);
+        Charge::query()->where('id', $this->charge_id)->decrement('refunded_amount', $this->amount);
         Event::dispatch(new RefundFailed($this));
         return $succeed;
     }
@@ -183,7 +207,7 @@ class Refund extends Model
                 'refund_fee' => $this->amount,
                 'refund_fee_type' => $this->charge->currency,
                 'refund_desc' => $this->reason,
-                'refund_account' => 'REFUND_SOURCE_RECHARGE_FUNDS',
+                'refund_account' => 'REFUND_SOURCE_UNSETTLED_FUNDS',//使用未结算资金退款
                 'notify_url' => route('transaction.notify.refund', ['channel' => Transaction::CHANNEL_WECHAT]),
             ];
             try {

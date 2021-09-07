@@ -52,6 +52,7 @@ use Yansongda\Supports\Collection;
  * @property string $subject 支付标题
  * @property string $description 描述
  * @property int $total_amount 支付金额，单位分
+ * @property int $refunded_amount 已退款钱数
  * @property string $currency 支付币种
  * @property string $state 交易状态
  * @property string $client_ip 客户端IP
@@ -73,7 +74,7 @@ use Yansongda\Supports\Collection;
  * @property-read bool $reversed 是否已撤销
  * @property-read bool $closed 是否已关闭
  * @property-read string $stateDesc 状态描述
- * @property-read int $refundedAmount 已退款钱数
+ * @property-read int $refundableAmount 可退款金额
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
@@ -106,8 +107,8 @@ class Charge extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'currency',
-        'state', 'client_ip', 'metadata', 'credential', 'extra', 'failure', 'succeed_at', 'expired_at'
+        'id', 'trade_channel', 'trade_type', 'transaction_no', 'subject', 'description', 'total_amount', 'refunded_amount',
+        'currency', 'state', 'client_ip', 'metadata', 'credential', 'extra', 'failure', 'succeed_at', 'expired_at'
     ];
 
     /**
@@ -123,6 +124,7 @@ class Charge extends Model
         'subject' => 'string',
         'description' => 'string',
         'total_amount' => 'int',
+        'refunded_amount' => 'int',
         'currency' => 'string',
         'state' => 'string',
         'client_ip' => 'string',
@@ -249,15 +251,14 @@ class Charge extends Model
     }
 
     /**
-     * 已退款钱数
+     * 获取可退款钱数
      * @return int
      */
-    public function getRefundedAmountAttribute(): int
+    public function getRefundableAmountAttribute(): int
     {
-        if ($this->refunded) {
-            return $this->refunds()
-                ->where('status', 'in', [Refund::STATUS_PENDING, Refund::STATUS_SUCCESS, Refund::STATUS_PROCESSING])
-                ->sum('amount');
+        $refundableAmount = $this->total_amount - $this->refunded_amount;
+        if ($refundableAmount > 0) {
+            return $refundableAmount;
         }
         return 0;
     }
@@ -270,17 +271,19 @@ class Charge extends Model
      */
     public function refund(string $reason): Refund
     {
-        if ($this->paid) {
+        if (!$this->paid) {
+            throw new TransactionException('Not paid, no refund.');
+        } elseif ($this->refundableAmount == 0) {
+            throw new TransactionException('No refundable amount.');
+        } else {
             /** @var Refund $refund */
             $refund = $this->refunds()->create([
                 'charge_id' => $this->id,
                 'amount' => $this->total_amount,
                 'reason' => $reason,
             ]);
-            $this->update(['state' => static::STATE_REFUND]);
             return $refund;
         }
-        throw new TransactionException('Not paid, no refund.');
     }
 
     /**

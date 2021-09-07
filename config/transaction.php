@@ -66,8 +66,5 @@ return [
         // 'dev' 时为沙箱模式
         // 'hk' 时为东南亚节点
         // 'mode' => 'dev',
-
-        //微信退款资金来源
-        'unsettled_funds' => 'REFUND_SOURCE_RECHARGE_FUNDS',
     ],
 ];

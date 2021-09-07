@@ -7,6 +7,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Admin\Controllers;
 
 use Dcat\Admin\Http\Controllers\AdminController;
@@ -38,24 +39,21 @@ class ChargeController extends AdminController
     {
         return Grid::make(new Charge(), function (Grid $grid) {
             $grid->filter(function (Grid\Filter $filter) {
-                $filter->equal('id');
+                $filter->equal('id', '流水号');
+                $filter->equal('transaction_no', '网关流水号');
             });
-            $grid->quickSearch(['id']);
+            $grid->quickSearch(['id', 'transaction_no']);
             $grid->model()->orderBy('id', 'desc');
-
             $grid->column('id', 'ID')->sortable();
-            $grid->column('user_id', '用户ID');
-
-            $grid->column('channel', '付款渠道');
-            $grid->column('trade_type', '付款类型');
-
-            $grid->column('amount', '付款金额')->display(function ($amount) {
+            $grid->column('transaction_no', '网关流水号');
+            $grid->column('trade_channel', '收款渠道');
+            $grid->column('trade_type', '渠道类型');
+            $grid->column('total_amount', '收款金额')->display(function ($amount) {
                 return ($amount / 100) . '元';
             });
-            $grid->column('score', '积分数量');
-            $grid->column('status', '状态')->using(Charge::getStatusLabels())->dot(Charge::getStatusDots(), 'info');
+            $grid->column('state', '状态')->using(Charge::getStateMaps());
             $grid->column('client_ip', '客户端IP');
-            $grid->column('succeeded_at', '成功时间');
+            $grid->column('succeed_at', '付款时间');
 
             $grid->column('created_at', '创建时间')->sortable();
 
