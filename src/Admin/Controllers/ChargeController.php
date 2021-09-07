@@ -15,7 +15,7 @@ use Dcat\Admin\Grid;
 use Larva\Transaction\Models\Charge;
 
 /**
- * 付款单
+ * 收款单
  * @author Tongle Xu <xutongle@gmail.com>
  */
 class ChargeController extends AdminController

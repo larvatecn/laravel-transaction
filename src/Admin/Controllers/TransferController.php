@@ -14,7 +14,7 @@ use Dcat\Admin\Grid;
 use Larva\Transaction\Models\Transfer;
 
 /**
- * 提现单
+ * 付款单
  * @author Tongle Xu <xutongle@gmail.com>
  */
 class TransferController extends AdminController
