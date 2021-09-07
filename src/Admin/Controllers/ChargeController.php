@@ -14,7 +14,7 @@ use Dcat\Admin\Grid;
 use Larva\Transaction\Models\Charge;
 
 /**
- * 付款单
+ * 收款单
  * @author Tongle Xu <xutongle@gmail.com>
  */
 class ChargeController extends AdminController
@@ -26,7 +26,7 @@ class ChargeController extends AdminController
      */
     protected function title(): string
     {
-        return '付款单';
+        return '收款单';
     }
 
     /**
@@ -45,18 +45,16 @@ class ChargeController extends AdminController
             $grid->quickSearch(['id', 'transaction_no', 'order_id']);
             $grid->model()->orderBy('id', 'desc');
             $grid->column('id', '流水号')->sortable();
-            $grid->column('trade_channel', '支付渠道');
-            $grid->column('trade_type', '支付类型');
             $grid->column('transaction_no', '网关流水号');
-            $grid->column('order_id', '订单号');
-            $grid->column('amount', '支付金额')->display(function ($amount) {
+            $grid->column('trade_channel', '收款渠道');
+            $grid->column('trade_type', '渠道类型');
+            $grid->column('total_amount', '收款金额')->display(function ($amount) {
                 return ($amount / 100) . '元';
             });
-            $grid->column('score', '积分数量');
+            $grid->column('order_id', '订单号');
             $grid->column('state', '状态')->using(Charge::getStateMaps());
             $grid->column('client_ip', '客户端IP');
-            $grid->column('succeed_at', '成功时间');
-            $grid->column('expired_at', '过期时间');
+            $grid->column('succeed_at', '付款时间');
 
             $grid->column('created_at', '创建时间')->sortable();
 

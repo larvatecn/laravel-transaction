@@ -45,8 +45,21 @@ class RefundController extends AdminController
 
             $grid->quickSearch(['id', 'transaction_no', 'charge_id']);
             $grid->model()->orderBy('id', 'desc');
+
             $grid->column('id', '流水号')->sortable();
+            $grid->column('charge_id', '收款流水号');
             $grid->column('transaction_no', '网关流水号');
+            $grid->column('amount', '退款金额')->display(function ($amount) {
+                return ($amount / 100) . '元';
+            });
+            $grid->column('reason', '退款原因');
+            $grid->column('status', '状态')->using(Refund::getStatusMaps());
+            $grid->column('succeed_at', '成功时间');
+            $grid->column('created_at', '创建时间')->sortable();
+            $grid->disableCreateButton();
+            $grid->disableViewButton();
+            $grid->disableEditButton();
+            $grid->disableDeleteButton();
         });
     }
 }

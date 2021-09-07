@@ -319,23 +319,24 @@ class Charge extends Model
     /**
      * 关闭该笔收单
      * @return bool
-     * @throws Exception
+     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
+     * @throws \Yansongda\Pay\Exception\ContainerException
+     * @throws \Yansongda\Pay\Exception\InvalidParamsException
+     * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
     public function markClosed(): bool
     {
         if ($this->state == static::STATE_NOTPAY) {
             $channel = Transaction::getGateway($this->trade_channel);
-            try {
-                $result = $channel->close($this->id);
-                if ($result) {
-                    $this->update(['state' => static::STATE_CLOSED, 'credential' => null]);
-                    Event::dispatch(new ChargeClosed($this));
-                    return true;
-                }
-                return false;
-            } catch (GatewayException | InvalidArgumentException | InvalidConfigException | InvalidSignException $e) {
-                Log::error($e->getMessage());
+            $result = $channel->close([
+                'out_trade_no' => $this->id,
+            ]);
+            if ($result) {
+                $this->update(['state' => static::STATE_CLOSED, 'credential' => null]);
+                Event::dispatch(new ChargeClosed($this));
+                return true;
             }
+            return false;
         }
         return false;
     }
@@ -345,7 +346,6 @@ class Charge extends Model
      * @param string $channel
      * @param string $type
      * @return array
-     * @throws InvalidGatewayException
      */
     public function getCredential(string $channel, string $type): array
     {

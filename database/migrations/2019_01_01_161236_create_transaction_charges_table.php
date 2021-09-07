@@ -22,6 +22,7 @@ class CreateTransactionChargesTable extends Migration
             $table->string('subject', 256)->nullable()->comment('订单标题');
             $table->string('description', 127)->nullable()->comment('商品描述');
             $table->unsignedInteger('total_amount')->comment('订单总金额');
+            $table->unsignedInteger('refunded_amount')->nullable()->default(0)->comment('已退款钱数');
             $table->string('currency', 3)->default('CNY')->comment('货币类型');
             $table->string('state', 32)->nullable()->comment('交易状态');
             $table->ipAddress('client_ip')->nullable()->comment('用户的客户端IP');
