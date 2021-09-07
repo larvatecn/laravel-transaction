@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Jobs;
 
 use Illuminate\Bus\Queueable;
@@ -61,11 +62,11 @@ class CheckChargeJob implements ShouldQueue
      */
     public function handle()
     {
-        if (!$this->charge->paid) {
-            if (Carbon::parse($this->charge->expired_at)->diffInSeconds(Carbon::now()) < 0) {//过期订单直接关闭
-                $this->charge->markClosed();
-            } else {//过一会再次查询
-                $this->release(2);
+        if ($this->charge->state == Charge::STATE_NOTPAY) {
+            if ($this->charge->expired_at && $this->charge->expired_at->diffInSeconds(Carbon::now()) < 0) {
+                $this->charge->close();//关闭订单
+            } else {
+                $this->release(now()->addMinutes(2));
             }
         }
     }
