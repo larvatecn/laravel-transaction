@@ -16,8 +16,8 @@ return [
             'alipay_public_cert_path' => config_path('certs/alipay_public.pem'),
             // 支付宝根证书 路径
             'alipay_root_cert_path' => config_path('certs/alipay_ca.pem'),
-            'return_url' => '',
-            'notify_url' => '',
+            'return_url' => '',//不用配置
+            'notify_url' => '',//不用配置
             'mode' => Pay::MODE_NORMAL,
         ],
     ],
@@ -48,7 +48,7 @@ return [
             'wechat_public_cert_path' => [
                 '' => '',
             ],
-            'notify_url' => '',
+            'notify_url' => '',//不用配置
             'mode' => Pay::MODE_NORMAL,
         ],
     ],
