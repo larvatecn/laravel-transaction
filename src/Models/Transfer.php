@@ -93,9 +93,9 @@ class Transfer extends Model
         'currency' => 'string',
         'description' => 'string',
         'transaction_no' => 'string',
-        'failure' => Failure::class,
         'recipient' => 'array',
-        'extra' => 'array'
+        'extra' => 'array',
+        'failure' => Failure::class,
     ];
 
     /**
@@ -105,6 +105,16 @@ class Transfer extends Model
      */
     protected $dates = [
         'succeed_at', 'created_at', 'updated_at', 'deleted_at',
+    ];
+
+    /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $statusMaps = [
+        self::STATUS_PENDING => '待处理',
+        self::STATUS_SUCCESS => '付款成功',
+        self::STATUS_ABNORMAL => '付款异常',
     ];
 
     /**
@@ -122,6 +132,15 @@ class Transfer extends Model
         static::created(function (Transfer $model) {
             HandleTransferJob::dispatch($model)->delay(1);
         });
+    }
+
+    /**
+     * 获取 Status Label
+     * @return string[]
+     */
+    public static function getStatusMaps(): array
+    {
+        return static::$statusMaps;
     }
 
     /**
