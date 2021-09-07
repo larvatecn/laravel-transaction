@@ -206,7 +206,7 @@ class Transfer extends Model
         if ($this->channel == Transaction::CHANNEL_WECHAT) {
             $config = [
                 'partner_trade_no' => $this->id,
-                'openid' => $this->recipient_id,
+                'openid' => $this->recipient['open_id'],
                 'check_name' => 'NO_CHECK',
                 'amount' => $this->amount,
                 'desc' => $this->description,

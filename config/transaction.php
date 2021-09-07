@@ -11,11 +11,11 @@ return [
             // 应用私钥
             'app_secret_cert' => '',
             // 应用公钥证书 路径
-            'app_public_cert_path' => '',
+            'app_public_cert_path' => config_path('certs/alipay_key.pem'),
             // 支付宝公钥证书 路径
-            'alipay_public_cert_path' => '',
+            'alipay_public_cert_path' => config_path('certs/alipay_public.pem'),
             // 支付宝根证书 路径
-            'alipay_root_cert_path' => '',
+            'alipay_root_cert_path' => config_path('certs/alipay_ca.pem'),
             'return_url' => '',
             'notify_url' => '',
             'mode' => Pay::MODE_NORMAL,
@@ -39,10 +39,10 @@ return [
             // 商户秘钥 V3
             'mch_secret_key' => '',
 
-            // 商户私钥证书路径
-            'mch_secret_cert' => '',
             // 商户公钥证书路径
-            'mch_public_cert_path' => '',
+            'mch_public_cert_path' => config_path('certs/wechat_api_client_cert.pem'),
+            // 商户私钥证书路径
+            'mch_secret_cert' => config_path('certs/wechat_api_client_key.pem'),
 
             // 微信公钥证书路径
             'wechat_public_cert_path' => [
@@ -59,9 +59,9 @@ return [
     ],
     // optional，默认 warning；日志路径为：sys_get_temp_dir().'/logs/yansongda.pay.log'
     'logger' => [
-        'enable' => false,
+        'enable' => true,
         'file' => storage_path('logs/pay.log'),
-        'level' => 'debug',
+        'level' => env('LOG_LEVEL'),
         'type' => 'daily', // optional, 可选 daily.
         'max_file' => 30,
     ],

@@ -327,7 +327,7 @@ class Charge extends Model
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
-    public function markClosed(): bool
+    public function close(): bool
     {
         if ($this->state == static::STATE_NOTPAY) {
             $channel = Transaction::getGateway($this->trade_channel);
