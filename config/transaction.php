@@ -40,9 +40,9 @@ return [
             'mch_secret_key' => '',
 
             // 商户公钥证书路径
-            'mch_public_cert_path' => config_path('certs/wechat_api_client_cert.pem'),
+            'mch_public_cert_path' => config_path('certs/apiclient_cert.pem'),
             // 商户私钥证书路径
-            'mch_secret_cert' => config_path('certs/wechat_api_client_key.pem'),
+            'mch_secret_cert' => config_path('certs/apiclient_key.pem'),
 
             // 微信公钥证书路径
             'wechat_public_cert_path' => [

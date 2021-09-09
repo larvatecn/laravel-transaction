@@ -295,7 +295,7 @@ class Charge extends Model
             'expired_at' => null,
             'succeed_at' => $this->freshTimestamp(),
             'state' => static::STATE_SUCCESS,
-            'credential' => null,
+            'credential' => [],
             'extra' => $extra
         ]);
         Event::dispatch(new ChargeSucceeded($this));
@@ -312,7 +312,7 @@ class Charge extends Model
     {
         $state = $this->updateQuietly([
             'state' => static::STATE_PAYERROR,
-            'credential' => null,
+            'credential' => [],
             'failure' => ['code' => $code, 'desc' => $desc]
         ]);
         Event::dispatch(new ChargeFailed($this));
@@ -331,9 +331,7 @@ class Charge extends Model
     {
         if ($this->state == static::STATE_NOTPAY) {
             $channel = Transaction::getGateway($this->trade_channel);
-            $result = $channel->close([
-                'out_trade_no' => $this->id,
-            ]);
+            $result = $channel->close(['out_trade_no' => $this->id]);
             if ($result) {
                 $this->update(['state' => static::STATE_CLOSED, 'credential' => null]);
                 Event::dispatch(new ChargeClosed($this));
@@ -353,7 +351,7 @@ class Charge extends Model
      */
     public function getCredential(string $channel, string $type, array $metadata = []): array
     {
-        $this->update(['trade_channel' => $channel, 'trade_type' => $type, $metadata]);
+        $this->update(['trade_channel' => $channel, 'trade_type' => $type, 'metadata' => $metadata]);
         $this->prePay();
         $this->refresh();
         return $this->credential;
@@ -364,60 +362,14 @@ class Charge extends Model
      */
     public function prePay()
     {
-        $order = [
-            'out_trade_no' => $this->id,
-        ];
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
-            $order['total_fee'] = $this->total_amount;//总金额，单位分
-            $order['description'] = $this->description;
-            $order['amount'] = [
-                'total' => $this->total_amount,//总金额，单位分
-                'currency' => $this->currency,
-            ];
-            $order['scene_info'] = [
-                'payer_client_ip' => $this->client_ip,
-            ];
-            if ($this->metadata['openid']) {
-                $order['payer'] = [
-                    'openid' => $this->metadata['openid'],
-                ];
-            }
-            if ($this->expired_at) {
-                $order['time_expire'] = $this->expired_at->toRfc3339String();
-            }
-            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
-            $channel = Transaction::wechat();
+
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
-            $order['total_amount'] = $this->total_amount / 100;//总钱数，单位元
-            $order['subject'] = $this->subject;
-            if ($this->description) {
-                $order['body'] = $this->description;
-            }
-            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
-            if ($this->trade_type == 'wap') {
-                $order['return_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
-            }
-            $channel = Transaction::alipay();
+
         } else {
             throw new TransactionException('The channel does not exist.');
         }
-        // 获取支付凭证
-        $credential = $channel->__call($this->trade_type, $order);
-        if ($credential instanceof Collection) {
-            $credential = $credential->toArray();
-        } elseif ($credential instanceof RedirectResponse) {
-            $credential = ['url' => $credential->getTargetUrl()];
-        } elseif ($credential instanceof JsonResponse) {
-            $credential = json_decode($credential->getContent(), true);
-        } elseif ($credential instanceof Response) {//此处判断一定要在最后
-            if ($this->trade_channel == Transaction::CHANNEL_ALIPAY && $this->trade_type == 'app') {
-                $params = [];
-                parse_str($credential->getContent(), $params);
-                $credential = $params;
-            } else {//WEB H5
-                $credential = ['html' => $credential->getContent()];
-            }
-        }
+        $credential = [];
         $this->updateQuietly(['credential' => $credential]);
     }
 }
