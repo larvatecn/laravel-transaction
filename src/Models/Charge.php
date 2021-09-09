@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -377,12 +378,12 @@ class Charge extends Model
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order['spbill_create_ip'] = $this->client_ip;
             $order['total_fee'] = $this->total_amount;//总金额，单位分
-            $order['body'] = $this->description;
+            $order['body'] = $this->description ?? $this->subject;
             if ($this->expired_at) {
                 $order['time_expire'] = $this->expired_at->format('YmdHis');
             }
-            if ($this->metadata['openid']) {
-                $order['openid'] = $this->metadata['openid'] ?? '';
+            if ($this->metadata && $this->metadata['openid']) {
+                $order['openid'] = $this->metadata['openid'];
             }
             $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
