@@ -346,13 +346,14 @@ class Charge extends Model
 
     /**
      * 获取指定渠道的支付凭证
-     * @param string $channel
-     * @param string $type
+     * @param string $channel 渠道
+     * @param string $type 通道类型
+     * @param array $metadata 元数据
      * @return array
      */
-    public function getCredential(string $channel, string $type): array
+    public function getCredential(string $channel, string $type, array $metadata = []): array
     {
-        $this->update(['trade_channel' => $channel, 'trade_type' => $type]);
+        $this->update(['trade_channel' => $channel, 'trade_type' => $type, $metadata]);
         $this->prePay();
         $this->refresh();
         return $this->credential;
