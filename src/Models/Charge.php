@@ -338,7 +338,7 @@ class Charge extends Model
             try {
                 $result = $channel->close($this->id);
                 if ($result) {
-                    $this->update(['state' => static::STATE_CLOSED, 'credential' => null]);
+                    $this->update(['state' => static::STATE_CLOSED, 'credential' => []]);
                     Event::dispatch(new ChargeClosed($this));
                     return true;
                 }
@@ -354,12 +354,13 @@ class Charge extends Model
      * 获取指定渠道的支付凭证
      * @param string $channel
      * @param string $type
+     * @param array $metadata
      * @return array
      * @throws InvalidGatewayException
      */
-    public function getCredential(string $channel, string $type): array
+    public function getCredential(string $channel, string $type, array $metadata = []): array
     {
-        $this->update(['trade_channel' => $channel, 'trade_type' => $type]);
+        $this->update(['trade_channel' => $channel, 'trade_type' => $type, 'metadata' => $metadata]);
         $this->prePay();
         $this->refresh();
         return $this->credential;
