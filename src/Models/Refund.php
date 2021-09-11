@@ -31,7 +31,7 @@ use Larva\Transaction\Transaction;
 
 /**
  * 退款处理模型
- * @property string $id 退款流水号
+ * @property int $id 退款流水号
  * @property int $charge_id 付款ID
  * @property string $transaction_no 网关流水号
  * @property int $amount 退款金额/单位分
@@ -216,35 +216,36 @@ class Refund extends Model
      */
     public function gatewayHandle(): Refund
     {
-        $channel = Transaction::getChannel($this->charge->trade_channel);
         if ($this->charge->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order = [
-                'out_refund_no' => $this->id,
-                'out_trade_no' => $this->charge->id,
-                'total_fee' => $this->charge->total_amount,
-                'refund_fee' => $this->amount,
-                'refund_fee_type' => $this->charge->currency,
-                'refund_desc' => $this->reason,
-                'refund_account' => 'REFUND_SOURCE_UNSETTLED_FUNDS',//使用未结算资金退款
+                'out_trade_no' => (string)$this->charge->id,
+                'out_refund_no' => (string)$this->id,
+                'amount' => [
+                    'refund' => $this->amount,
+                    'total' => $this->charge->total_amount,
+                    'currency' => $this->charge->currency,
+                ],
+                'reason' => $this->reason,
+                'funds_account' => 'AVAILABLE',//可用余额
                 'notify_url' => route('transaction.notify.wechat'),
             ];
             try {
-                $response = $channel->refund($order);
+                $response = Transaction::wechat()->refund($order);
                 $this->markSucceeded($response->transaction_id, $response->toArray());
             } catch (Exception $exception) {//设置失败
                 $this->markFailed('FAIL', $exception->getMessage());
             }
         } elseif ($this->charge->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order = [
-                'out_trade_no' => $this->charge->id,
+                'out_trade_no' => (string)$this->charge->id,
+                'out_request_no' => (string)$this->id,
                 'trade_no' => $this->charge->transaction_no,
                 'refund_currency' => $this->charge->currency,
                 'refund_amount' => $this->amount / 100,
-                'refund_reason' => '退款',
-                'out_request_no' => $this->id
+                'refund_reason' => $this->reason,
             ];
             try {
-                $response = $channel->refund($order);
+                $response = Transaction::alipay()->refund($order);
                 $this->markSucceeded($response->trade_no, $response->toArray());
             } catch (Exception $exception) {//设置失败
                 $this->markFailed('FAIL', $exception->getMessage());
