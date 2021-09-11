@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -52,6 +51,10 @@ class NotifyController
                 $refund->markFailed($result->resource['ciphertext']['refund_status'], $result->summary);
             }
         } elseif ($result->event_type == 'REFUND.CLOSED' && $result->resource_type == 'encrypt-resource') {//退款关闭通知
+            $refund = Transaction::getRefund($result->resource['ciphertext']['out_refund_no']);
+            if ($refund) {
+                $refund->markClosed($result->resource['ciphertext']['refund_status'], $result->summary);
+            }
         }
         Log::debug('Wechat notify', $result->toArray());
         return $pay->success();

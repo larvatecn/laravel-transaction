@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -203,9 +202,7 @@ class Transfer extends Model
      */
     public function gatewayHandle(): Transfer
     {
-        $channel = Transaction::getGateway($this->trade_channel);
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
-
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $config = [
                 'out_biz_no' => (string)$this->id,
@@ -219,7 +216,7 @@ class Transfer extends Model
                 'remark' => $this->description,
             ];
             try {
-                $response = $channel->transfer($config);
+                $response = Transaction::alipay()->transfer($config);
                 if ($response->code == '10000' && ($response->status == 'SUCCESS' || $response->status == 'DEALING')) {
                     $this->markSucceeded($response->order_id, $response->toArray());
                 } else {
@@ -229,7 +226,6 @@ class Transfer extends Model
                 $this->markFailed('FAIL', $exception->getMessage());
             }
         }
-
         return $this;
     }
 }

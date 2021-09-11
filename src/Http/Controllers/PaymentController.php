@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -57,7 +56,6 @@ class PaymentController
     public function paymentCallback(string $channel)
     {
         try {
-
             $params = $pay->verify(); // 验签
             $charge = null;
             if ($channel == Transaction::CHANNEL_ALIPAY) {

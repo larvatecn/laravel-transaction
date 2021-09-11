@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Casts\Failure;
+use Larva\Transaction\Events\RefundClosed;
 use Larva\Transaction\Events\RefundFailed;
 use Larva\Transaction\Events\RefundSucceeded;
 use Larva\Transaction\Jobs\HandleRefundJob;
@@ -175,6 +176,24 @@ class Refund extends Model
     }
 
     /**
+     * 关闭退款
+     * @param string $code
+     * @param string $desc
+     * @return bool
+     */
+    public function markClosed(string $code, string $desc): bool
+    {
+        $succeed = $this->updateQuietly([
+            'status' => static::STATUS_CLOSED,
+            'credential' => [],
+            'failure' => ['code' => $code, 'desc' => $desc]
+        ]);
+        Charge::query()->where('id', $this->charge_id)->decrement('refunded_amount', $this->amount);
+        Event::dispatch(new RefundClosed($this));
+        return $succeed;
+    }
+
+    /**
      * 设置退款完成
      * @param string $transactionNo
      * @param array $extra
@@ -197,7 +216,7 @@ class Refund extends Model
      */
     public function gatewayHandle(): Refund
     {
-        $channel = Transaction::getGateway($this->charge->trade_channel);
+        $channel = Transaction::getChannel($this->charge->trade_channel);
         if ($this->charge->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order = [
                 'out_refund_no' => $this->id,

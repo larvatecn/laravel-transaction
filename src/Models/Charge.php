@@ -333,10 +333,10 @@ class Charge extends Model
     public function close(): bool
     {
         if ($this->state == static::STATE_NOTPAY) {
-            $channel = Transaction::getGateway($this->trade_channel);
+            $channel = Transaction::getChannel($this->trade_channel);
             $result = $channel->close(['out_trade_no' => $this->id]);
             if ($result) {
-                $this->update(['state' => static::STATE_CLOSED, 'credential' => null]);
+                $this->updateQuietly(['state' => static::STATE_CLOSED, 'credential' => []]);
                 Event::dispatch(new ChargeClosed($this));
                 return true;
             }
@@ -409,7 +409,7 @@ class Charge extends Model
             throw new TransactionException('The channel does not exist.');
         }
         try {
-            $credential = Transaction::getGateway($this->trade_channel)->{$this->trade_type}($order);
+            $credential = Transaction::getChannel($this->trade_channel)->{$this->trade_type}($order);
             if ($credential instanceof Collection) {
                 $credential = $credential->toArray();
             } elseif ($credential instanceof \GuzzleHttp\Psr7\Response) {
