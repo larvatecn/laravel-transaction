@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -246,6 +245,7 @@ class Refund extends Model
                 $response = Transaction::wechat()->refund($order);
                 if (isset($response->status) && $response->status == 'SUCCESS') {
                     $this->markSucceeded($response->transaction_id, $response->toArray());
+                } elseif (isset($response->status) && $response->status == 'PROCESSING') {
                 } else {
                     $this->markFailed($response->code, $response->message);
                 }
