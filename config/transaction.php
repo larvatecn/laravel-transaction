@@ -11,11 +11,11 @@ return [
             // 应用私钥
             'app_secret_cert' => '',
             // 应用公钥证书 路径
-            'app_public_cert_path' => config_path('certs/alipay_key.pem'),
+            'app_public_cert_path' => config_path('certs/appCertPublicKey_xxx.crt'),
             // 支付宝公钥证书 路径
-            'alipay_public_cert_path' => config_path('certs/alipay_public.pem'),
+            'alipay_public_cert_path' => config_path('certs/alipayCertPublicKey_RSA2.crt'),
             // 支付宝根证书 路径
-            'alipay_root_cert_path' => config_path('certs/alipay_ca.pem'),
+            'alipay_root_cert_path' => config_path('alicret/alipayRootCert.crt'),
             'return_url' => '',//不用配置
             'notify_url' => '',//不用配置
             'mode' => Pay::MODE_NORMAL,
@@ -40,9 +40,9 @@ return [
             'mch_secret_key' => '',
 
             // 商户公钥证书路径
-            'mch_public_cert_path' => config_path('certs/apiclient_cert.pem'),
+            'mch_public_cert_path' => config_path('wxcert/apiclient_cert.pem'),
             // 商户私钥证书路径
-            'mch_secret_cert' => config_path('certs/apiclient_key.pem'),
+            'mch_secret_cert' => config_path('wxcert/apiclient_key.pem'),
 
             // 微信公钥证书路径
             'wechat_public_cert_path' => [

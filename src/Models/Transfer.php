@@ -31,7 +31,7 @@ use Larva\Transaction\Transaction;
  * 企业付款模型，处理提现
  *
  * @property string $id 付款单ID
- * @property string $channel 付款渠道
+ * @property string $trade_channel 付款渠道
  * @property string $status 状态
  * @property int $amount 金额
  * @property string $currency 币种
@@ -76,7 +76,7 @@ class Transfer extends Model
      * @var array 批量赋值属性
      */
     public $fillable = [
-        'id', 'channel', 'status', 'amount', 'currency', 'description', 'transaction_no',
+        'id', 'trade_channel', 'status', 'amount', 'currency', 'description', 'transaction_no',
         'failure', 'recipient', 'extra', 'succeed_at'
     ];
 
@@ -87,7 +87,7 @@ class Transfer extends Model
      */
     protected $casts = [
         'id' => 'int',
-        'channel' => 'string',
+        'trade_channel' => 'string',
         'status' => 'string',
         'amount' => 'int',
         'currency' => 'string',
@@ -202,8 +202,8 @@ class Transfer extends Model
      */
     public function gatewayHandle(): Transfer
     {
-        $channel = Transaction::getGateway($this->channel);
-        if ($this->channel == Transaction::CHANNEL_WECHAT) {
+        $channel = Transaction::getGateway($this->trade_channel);
+        if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
             $config = [
                 'partner_trade_no' => $this->id,
                 'openid' => $this->recipient['open_id'],
@@ -222,7 +222,7 @@ class Transfer extends Model
             } catch (Exception $exception) {//设置付款失败
                 $this->markFailed('FAIL', $exception->getMessage());
             }
-        } elseif ($this->channel == Transaction::CHANNEL_ALIPAY) {
+        } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $config = [
                 'out_biz_no' => $this->id,
                 'payee_type' => $this->extra['recipient_account_type'],
@@ -240,6 +240,7 @@ class Transfer extends Model
                 $this->markFailed('FAIL', $exception->getMessage());
             }
         }
+
         return $this;
     }
 }
