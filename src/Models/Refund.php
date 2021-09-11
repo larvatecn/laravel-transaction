@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -117,6 +118,18 @@ class Refund extends Model
     ];
 
     /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $statusDots = [
+        self::STATUS_PENDING => 'info',
+        self::STATUS_SUCCESS => 'success',
+        self::STATUS_CLOSED => 'info',
+        self::STATUS_PROCESSING => 'warning',
+        self::STATUS_ABNORMAL => 'error',
+    ];
+
+    /**
      * The "booting" method of the model.
      *
      * @return void
@@ -140,6 +153,15 @@ class Refund extends Model
     public static function getStatusMaps(): array
     {
         return static::$statusMaps;
+    }
+
+    /**
+     * 获取状态Dot
+     * @return string[]
+     */
+    public static function getStateDots(): array
+    {
+        return static::$statusDots;
     }
 
     /**
@@ -178,6 +200,19 @@ class Refund extends Model
         Charge::query()->where('id', $this->charge_id)->decrement('refunded_amount', $this->amount);
         Event::dispatch(new RefundFailed($this));
         return $succeed;
+    }
+
+    /**
+     * 设置退款处理中
+     * @param array $extra
+     * @return bool
+     */
+    public function markProcessing(array $extra = []): bool
+    {
+        return $this->updateQuietly([
+            'status' => self::STATUS_PROCESSING,
+            'extra' => $extra
+        ]);
     }
 
     /**
@@ -246,6 +281,7 @@ class Refund extends Model
                 if (isset($response->status) && $response->status == 'SUCCESS') {
                     $this->markSucceeded($response->transaction_id, $response->toArray());
                 } elseif (isset($response->status) && $response->status == 'PROCESSING') {
+                    $this->markProcessing($response->toArray());
                 } else {
                     $this->markFailed($response->code, $response->message);
                 }
