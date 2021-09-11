@@ -302,7 +302,7 @@ class Charge extends Model
             'expired_at' => null,
             'succeed_at' => $this->freshTimestamp(),
             'state' => static::STATE_SUCCESS,
-            'credential' => null,
+            'credential' => [],
             'extra' => $extra
         ]);
         Event::dispatch(new ChargeSucceeded($this));
@@ -319,7 +319,7 @@ class Charge extends Model
     {
         $state = $this->updateQuietly([
             'state' => static::STATE_PAYERROR,
-            'credential' => null,
+            'credential' => [],
             'failure' => ['code' => $code, 'desc' => $desc]
         ]);
         Event::dispatch(new ChargeFailed($this));
