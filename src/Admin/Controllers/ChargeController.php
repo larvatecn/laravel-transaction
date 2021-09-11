@@ -68,6 +68,9 @@ class ChargeController extends AdminController
             $grid->column('total_amount', '收款金额')->display(function ($total_amount) {
                 return (string)($total_amount / 100) . '元';
             });
+            $grid->column('refunded_amount', '已退金额')->display(function ($refunded_amount) {
+                return (string)($refunded_amount / 100) . '元';
+            });
             $grid->column('state', '状态')
                 ->using(Charge::getStateMaps())
                 ->dot(Charge::getStateDots())
