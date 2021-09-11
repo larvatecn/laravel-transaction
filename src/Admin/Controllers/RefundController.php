@@ -57,7 +57,6 @@ class RefundController extends AdminController
             $grid->column('succeed_at', '成功时间');
             $grid->column('created_at', '创建时间')->sortable();
             $grid->disableCreateButton();
-            $grid->disableViewButton();
             $grid->disableEditButton();
             $grid->disableDeleteButton();
         });

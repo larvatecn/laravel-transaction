@@ -155,6 +155,21 @@ class Charge extends Model
     ];
 
     /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $stateDots = [
+        self::STATE_SUCCESS => 'success',
+        self::STATE_REFUND => 'warning',
+        self::STATE_NOTPAY => 'info',
+        self::STATE_CLOSED => 'info',
+        self::STATE_REVOKED => 'info',//已撤销（仅付款码支付会返回）
+        self::STATE_USERPAYING => 'info',//用户支付中（仅付款码支付会返回）
+        self::STATE_PAYERROR => 'error',//支付失败（仅付款码支付会返回）
+        self::STATE_ACCEPT => 'warning',
+    ];
+
+    /**
      * The "booting" method of the model.
      *
      * @return void
@@ -181,6 +196,15 @@ class Charge extends Model
     public static function getStateMaps(): array
     {
         return static::$stateMaps;
+    }
+
+    /**
+     * 获取状态Dot
+     * @return string[]
+     */
+    public static function getStateDots(): array
+    {
+        return static::$stateDots;
     }
 
     /**
