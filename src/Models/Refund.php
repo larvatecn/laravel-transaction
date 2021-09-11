@@ -207,7 +207,7 @@ class Refund extends Model
                 'refund_fee_type' => $this->charge->currency,
                 'refund_desc' => $this->reason,
                 'refund_account' => 'REFUND_SOURCE_UNSETTLED_FUNDS',//使用未结算资金退款
-                'notify_url' => route('transaction.notify.refund', ['channel' => Transaction::CHANNEL_WECHAT]),
+                'notify_url' => route('transaction.notify.wechat'),
             ];
             try {
                 $response = $channel->refund($order);

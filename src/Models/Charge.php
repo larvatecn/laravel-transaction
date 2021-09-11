@@ -388,7 +388,7 @@ class Charge extends Model
             if ($this->metadata && isset($this->metadata['openid'])) {
                 $order['payer']['openid'] = $this->metadata['openid'];
             }
-            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
+            $order['notify_url'] = route('transaction.notify.wechat');
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order['total_amount'] = $this->total_amount / 100;//总钱数，单位元
             $order['subject'] = $this->subject;
@@ -401,9 +401,9 @@ class Charge extends Model
             if ($this->metadata && isset($this->metadata['buyer_id'])) {
                 $order['buyer_id'] = $this->metadata['buyer_id'];
             }
-            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
+            $order['notify_url'] = route('transaction.notify.alipay');
             if ($this->trade_type == 'wap') {
-                $order['quit_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
+                $order['quit_url'] = route('transaction.callback.alipay');
             }
         } else {
             throw new TransactionException('The channel does not exist.');

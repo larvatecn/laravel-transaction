@@ -12,12 +12,13 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Larva\Transaction\Transaction;
-use Symfony\Component\HttpFoundation\Response;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * 通知回调
@@ -27,57 +28,49 @@ use Symfony\Component\HttpFoundation\Response;
 class NotifyController
 {
     /**
-     * 付款通知回调
+     * 微信通知
      * @param Request $request
-     * @param string $channel 回调的渠道
-     * @return Response
+     * @return ResponseInterface
      */
-    public function charge(Request $request, string $channel): Response
+    public function wechat(Request $request): ResponseInterface
     {
-        try {
-            $pay = Transaction::getGateway($channel);
-            if ($channel == Transaction::CHANNEL_WECHAT) {
-                $params = $pay->verify($request->getContent()); // 验签
-                if ($params['return_code'] == 'SUCCESS') {//入账
-                    $charge = Transaction::getCharge($params['out_trade_no']);
-                    $charge->markSucceeded($params['transaction_id']);
-                }
-                Log::debug('Wechat notify', $params->all());
-            } elseif ($channel == Transaction::CHANNEL_ALIPAY) {
-                $params = $pay->verify(); // 验签
-                if ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED') {
-                    $charge = Transaction::getCharge($params['out_trade_no']);
-                    $charge->markSucceeded($params['trade_no']);
-                }
-                Log::debug('Alipay notify', $params->all());
+        $pay = Transaction::wechat();
+        $result = $pay->callback();
+        if ($result->event_type == 'TRANSACTION.SUCCESS' && $result->resource_type == 'encrypt-resource') {//付款成功
+            $charge = Transaction::getCharge($result->resource['ciphertext']['out_trade_no']);
+            if ($charge) {
+                $charge->markSucceeded($result->resource['ciphertext']['transaction_id'], $result->toArray());
             }
-        } catch (\Exception $e) {
-            Log::error($e->getMessage());
+        } elseif ($result->event_type == 'REFUND.SUCCESS' && $result->resource_type == 'encrypt-resource') {//退款成功
+            $refund = Transaction::getRefund($result->resource['ciphertext']['out_refund_no']);
+            if ($refund) {
+                $refund->markSucceeded($result->resource['ciphertext']['success_time'], $result->toArray());
+            }
+        } elseif ($result->event_type == 'REFUND.ABNORMAL' && $result->resource_type == 'encrypt-resource') {//退款异常通知
+            $refund = Transaction::getRefund($result->resource['ciphertext']['out_refund_no']);
+            if ($refund) {
+                $refund->markFailed($result->resource['ciphertext']['refund_status'], $result->summary);
+            }
+        } elseif ($result->event_type == 'REFUND.CLOSED' && $result->resource_type == 'encrypt-resource') {//退款关闭通知
         }
+        Log::debug('Wechat notify', $result->toArray());
         return $pay->success();
     }
 
     /**
-     * 退款通知回调
+     * 支付宝通知
      * @param Request $request
-     * @param string $channel 回调的渠道
-     * @return Response
+     * @return ResponseInterface
      */
-    public function refund(Request $request, string $channel): Response
+    public function alipay(Request $request): ResponseInterface
     {
-        try {
-            $pay = Transaction::getGateway($channel);
-            $params = $pay->verify($request->getContent(), true); // 验签
-            if ($channel == Transaction::CHANNEL_WECHAT) {
-                if ($params['refund_status'] == 'SUCCESS') {//入账
-                    $refund = Transaction::getRefund($params['out_refund_no']);
-                    $refund->markSucceeded($params['success_time'], $params->toArray());
-                }
-                Log::debug('Wechat refund notify', $params->all());
-            }
-        } catch (\Exception $e) {
-            Log::error($e->getMessage());
-        }
+        $pay = Transaction::alipay();
+        $result = $pay->callback();
+//        if ($result['trade_status'] == 'TRADE_SUCCESS' || $result['trade_status'] == 'TRADE_FINISHED') {
+//            $charge = Transaction::getCharge($result['out_trade_no']);
+//            $charge->markSucceeded($result['trade_no']);
+//        }
+        Log::debug('alipay notify', $result->toArray());
         return $pay->success();
     }
 }

@@ -58,19 +58,18 @@ class RouteRegistrar
      */
     public function forNotify()
     {
-        $this->router->match(['get', 'post'], 'notify/charge/{channel}', [//支付通知
-            'uses' => 'NotifyController@charge',
-            'as' => 'transaction.notify.charge',
+        $this->router->match(['get', 'post'], 'notify/wechat', [//微信通知
+            'uses' => 'NotifyController@wechat',
+            'as' => 'transaction.notify.wechat',
+        ]);
+        $this->router->match(['get', 'post'], 'notify/alipay', [//支付通知
+            'uses' => 'NotifyController@alipay',
+            'as' => 'transaction.notify.alipay',
         ]);
 
-        $this->router->match(['get', 'post'], 'notify/refund/{channel}', [//退款通知
-            'uses' => 'NotifyController@refund',
-            'as' => 'transaction.notify.refund',
-        ]);
-
-        $this->router->match(['get', 'post'], 'callback/charge/{channel}', [//支付回调
-            'uses' => 'PaymentController@paymentCallback',
-            'as' => 'transaction.callback.charge',
+        $this->router->match(['get', 'post'], 'callback/alipay', [//支付回调
+            'uses' => 'PaymentController@alipayCallback',
+            'as' => 'transaction.callback.alipay',
         ]);
 
         $this->router->match(['get'], 'callback/charge/{id}', [//支付回调(一般用于扫码付)

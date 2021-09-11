@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -44,6 +45,11 @@ class PaymentController
         $this->response = $response;
     }
 
+    public function alipayCallback()
+    {
+        $pay = Transaction::getGateway($channel);
+    }
+
     /**
      * 付款回调
      * @param string $channel
@@ -51,7 +57,7 @@ class PaymentController
     public function paymentCallback(string $channel)
     {
         try {
-            $pay = Transaction::getGateway($channel);
+
             $params = $pay->verify(); // 验签
             $charge = null;
             if ($channel == Transaction::CHANNEL_ALIPAY) {
