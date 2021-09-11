@@ -48,12 +48,12 @@ class NotifyController
         } elseif ($result->event_type == 'REFUND.ABNORMAL' && $result->resource_type == 'encrypt-resource') {//退款异常通知
             $refund = Transaction::getRefund($result->resource['ciphertext']['out_refund_no']);
             if ($refund) {
-                $refund->markFailed($result->resource['ciphertext']['refund_status'], $result->summary);
+                $refund->markFailed($result->resource['ciphertext']['refund_status'], $result->summary, $result->toArray());
             }
         } elseif ($result->event_type == 'REFUND.CLOSED' && $result->resource_type == 'encrypt-resource') {//退款关闭通知
             $refund = Transaction::getRefund($result->resource['ciphertext']['out_refund_no']);
             if ($refund) {
-                $refund->markClosed($result->resource['ciphertext']['refund_status'], $result->summary);
+                $refund->markClosed($result->resource['ciphertext']['refund_status'], $result->summary, $result->toArray());
             }
         }
         Log::debug('Wechat notify', $result->toArray());

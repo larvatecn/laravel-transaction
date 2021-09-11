@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -165,11 +166,16 @@ class Refund extends Model
      * 设置退款错误
      * @param string $code
      * @param string $desc
+     * @param array $extra
      * @return bool
      */
-    public function markFailed(string $code, string $desc): bool
+    public function markFailed(string $code, string $desc, array $extra = []): bool
     {
-        $succeed = $this->updateQuietly(['status' => self::STATUS_ABNORMAL, 'failure' => ['code' => $code, 'desc' => $desc]]);
+        $succeed = $this->updateQuietly([
+            'status' => self::STATUS_ABNORMAL,
+            'failure' => ['code' => $code, 'desc' => $desc],
+            'extra' => $extra
+        ]);
         Charge::query()->where('id', $this->charge_id)->decrement('refunded_amount', $this->amount);
         Event::dispatch(new RefundFailed($this));
         return $succeed;
@@ -179,14 +185,16 @@ class Refund extends Model
      * 关闭退款
      * @param string $code
      * @param string $desc
+     * @param array $extra
      * @return bool
      */
-    public function markClosed(string $code, string $desc): bool
+    public function markClosed(string $code, string $desc, array $extra = []): bool
     {
         $succeed = $this->updateQuietly([
             'status' => static::STATUS_CLOSED,
             'credential' => [],
-            'failure' => ['code' => $code, 'desc' => $desc]
+            'failure' => ['code' => $code, 'desc' => $desc],
+            'extra' => $extra
         ]);
         Charge::query()->where('id', $this->charge_id)->decrement('refunded_amount', $this->amount);
         Event::dispatch(new RefundClosed($this));
@@ -204,7 +212,12 @@ class Refund extends Model
         if ($this->succeed) {
             return true;
         }
-        $this->updateQuietly(['status' => self::STATUS_SUCCESS, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $extra]);
+        $this->updateQuietly([
+            'status' => self::STATUS_SUCCESS,
+            'transaction_no' => $transactionNo,
+            'succeed_at' => $this->freshTimestamp(),
+            'extra' => $extra
+        ]);
         Event::dispatch(new RefundSucceeded($this));
         return $this->succeed;
     }
@@ -231,7 +244,11 @@ class Refund extends Model
             ];
             try {
                 $response = Transaction::wechat()->refund($order);
-                $this->markSucceeded($response->transaction_id, $response->toArray());
+                if (isset($response->status) && $response->status == 'SUCCESS') {
+                    $this->markSucceeded($response->transaction_id, $response->toArray());
+                } else {
+                    $this->markFailed($response->code, $response->message);
+                }
             } catch (Exception $exception) {//设置失败
                 $this->markFailed('FAIL', $exception->getMessage());
             }
