@@ -210,7 +210,6 @@ class Transfer extends Model
                 'check_name' => 'NO_CHECK',
                 'amount' => $this->amount,
                 'desc' => $this->description,
-                'type' => $this->recipient['type'],
             ];
             if (isset($this->recipient['name'])) {
                 $config['check_name'] = 'FORCE_CHECK';
