@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -30,7 +31,7 @@ use Larva\Transaction\Transaction;
 /**
  * 企业付款模型，处理提现
  *
- * @property string $id 付款单ID
+ * @property int $id 付款单ID
  * @property string $trade_channel 付款渠道
  * @property string $status 状态
  * @property int $amount 金额
@@ -204,38 +205,26 @@ class Transfer extends Model
     {
         $channel = Transaction::getGateway($this->trade_channel);
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
-            $config = [
-                'partner_trade_no' => $this->id,
-                'openid' => $this->recipient['open_id'],
-                'check_name' => 'NO_CHECK',
-                'amount' => $this->amount,
-                'desc' => $this->description,
-                'type' => $this->extra['type'],
-            ];
-            if (isset($this->extra['user_name'])) {
-                $config['check_name'] = 'FORCE_CHECK';
-                $config['re_user_name'] = $this->extra['user_name'];
-            }
-            try {
-                $response = $channel->transfer($config);
-                $this->markSucceeded($response->payment_no, $response->toArray());
-            } catch (Exception $exception) {//设置付款失败
-                $this->markFailed('FAIL', $exception->getMessage());
-            }
+
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $config = [
-                'out_biz_no' => $this->id,
-                'payee_type' => $this->extra['recipient_account_type'],
-                'payee_account' => $this->recipient_id,
-                'amount' => $this->amount / 100,
+                'out_biz_no' => (string)$this->id,
+                'trans_amount' => $this->amount / 100,
+                'product_code' => 'TRANS_ACCOUNT_NO_PWD',
+                'payee_info' => [
+                    'identity' => $this->recipient['account'],
+                    'identity_type' => $this->recipient['account_type'],
+                    'name' => $this->recipient['name']
+                ],
                 'remark' => $this->description,
             ];
-            if (isset($this->extra['recipient_name'])) {
-                $config['payee_real_name'] = $this->extra['recipient_name'];
-            }
             try {
                 $response = $channel->transfer($config);
-                $this->markSucceeded($response->payment_no, $response->toArray());
+                if ($response->code == '10000' && ($response->status == 'SUCCESS' || $response->status == 'DEALING')) {
+                    $this->markSucceeded($response->order_id, $response->toArray());
+                } else {
+                    $this->markFailed($response->sub_code, $response->sub_msg);
+                }
             } catch (Exception $exception) {//设置提现失败
                 $this->markFailed('FAIL', $exception->getMessage());
             }

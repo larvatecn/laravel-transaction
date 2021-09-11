@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -29,6 +28,10 @@ use Larva\Transaction\Models\Traits\DateTimeFormatter;
 use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 use Larva\Transaction\TransactionException;
+use Yansongda\Pay\Exception\ContainerDependencyException;
+use Yansongda\Pay\Exception\ContainerException;
+use Yansongda\Pay\Exception\InvalidParamsException;
+use Yansongda\Pay\Exception\ServiceNotFoundException;
 use Yansongda\Supports\Collection;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -362,14 +365,67 @@ class Charge extends Model
      */
     public function prePay()
     {
+        $order = [
+            'out_trade_no' => (string)$this->id,
+        ];
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
-
+            $order['description'] = $this->description ?? $this->subject;
+            $order['amount'] = [
+                'total' => $this->total_amount,
+                'currency' => 'CNY',
+            ];
+            if ($this->expired_at) {
+                $order['time_expire'] = $this->expired_at->toRfc3339String();
+            }
+            $order['scene_info'] = [
+                'payer_client_ip' => $this->client_ip
+            ];
+            if ($this->trade_type == 'wap') {
+                $order['scene_info']['h5_info']['type'] = 'Wap';
+                $order['scene_info']['h5_info']['app_name'] = config('app.name');
+                $order['scene_info']['h5_info']['app_url'] = config('app.url');
+            }
+            if ($this->metadata && isset($this->metadata['openid'])) {
+                $order['payer']['openid'] = $this->metadata['openid'];
+            }
+            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
-
+            $order['total_amount'] = $this->total_amount / 100;//总钱数，单位元
+            $order['subject'] = $this->subject;
+            if ($this->description) {
+                $order['body'] = $this->description;
+            }
+            if ($this->expired_at) {
+                $order['time_expire'] = $this->expired_at->format('Y-m-d H:i:s');
+            }
+            if ($this->metadata && isset($this->metadata['buyer_id'])) {
+                $order['buyer_id'] = $this->metadata['buyer_id'];
+            }
+            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
+            if ($this->trade_type == 'wap') {
+                $order['quit_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
+            }
         } else {
             throw new TransactionException('The channel does not exist.');
         }
-        $credential = [];
-        $this->updateQuietly(['credential' => $credential]);
+        try {
+            $credential = Transaction::getGateway($this->trade_channel)->{$this->trade_type}($order);
+            if ($credential instanceof Collection) {
+                $credential = $credential->toArray();
+            } elseif ($credential instanceof \GuzzleHttp\Psr7\Response) {
+                $credential = $credential->getBody()->getContents();
+                if ($this->trade_channel == Transaction::CHANNEL_ALIPAY && $this->trade_type == 'app') {
+                    $params = [];
+                    parse_str($credential, $params);
+                    $credential = $params;
+                } else {//WEB H5
+                    $credential = ['html' => $credential];
+                }
+            }
+            $this->updateQuietly(['credential' => $credential]);
+        } catch (ContainerDependencyException | ContainerException | InvalidParamsException | ServiceNotFoundException $e) {
+            $this->markFailed($e->getCode(), $e->getMessage());
+            return;
+        }
     }
 }
