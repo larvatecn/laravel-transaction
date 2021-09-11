@@ -14,6 +14,7 @@ use Dcat\Admin\Contracts\LazyRenderable;
 use Dcat\Admin\Traits\LazyWidget;
 use Dcat\Admin\Widgets\Form;
 use Larva\Transaction\Models\Charge;
+use Larva\Transaction\TransactionException;
 
 /**
  * 退款表单
@@ -39,7 +40,11 @@ class RefundForm extends Form implements LazyRenderable
     {
         // 获取外部传递参数
         $id = $this->payload['id'] ?? null;
-        Charge::findOrFail($id)->refund($input['reason']);
-        return $this->response()->success('已受理！')->refresh();
+        try {
+            Charge::findOrFail($id)->refund($input['reason']);
+            return $this->response()->success('已受理！')->refresh();
+        } catch (TransactionException $exception) {
+            return $this->response()->error($exception->getMessage())->refresh();
+        }
     }
 }
