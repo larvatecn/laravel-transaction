@@ -7,6 +7,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Admin\Actions;
 
 use Dcat\Admin\Actions\Response;
@@ -38,16 +39,18 @@ class RetryTransfer extends RowAction
      */
     public function handle(Request $request)
     {
-        HandleTransferJob::dispatch($this->row)->delay(1);
+        $key = $this->getKey();
+        $transfer = Transfer::findOrFail($key);
+        HandleTransferJob::dispatch($transfer)->delay(1);
         return $this->response()->success('已重试！')->refresh();
     }
 
     /**
      * @return string
      */
-    public function render()
+    public function render(): string
     {
-        if ($this->row->status != Transfer::STATUS_ABNORMAL) {
+        if ($this->row->status != Transfer::STATUS_PENDING || $this->row->status != Transfer::STATUS_ABNORMAL) {
             $this->disable();
         }
         return parent::render();

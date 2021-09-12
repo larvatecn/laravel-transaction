@@ -17,9 +17,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Larva\Transaction\Jobs\HandleRefundJob;
-use Larva\Transaction\Jobs\HandleTransferJob;
 use Larva\Transaction\Models\Refund;
-use Larva\Transaction\Models\Transfer;
 
 /**
  * 重试退款
@@ -41,7 +39,9 @@ class RetryRefund extends RowAction
      */
     public function handle(Request $request)
     {
-        HandleRefundJob::dispatch($this->row)->delay(1);
+        $key = $this->getKey();
+        $refund = Refund::findOrFail($key);
+        HandleRefundJob::dispatch($refund)->delay(1);
         return $this->response()->success('已重试！')->refresh();
     }
 
