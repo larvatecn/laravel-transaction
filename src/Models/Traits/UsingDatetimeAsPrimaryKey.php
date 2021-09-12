@@ -10,18 +10,17 @@ declare(strict_types=1);
 namespace Larva\Transaction\Models\Traits;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 /**
- * 使用时间戳作为主键
+ * 使用时间作为主键
  * @mixin Model
  */
-trait UsingTimestampAsPrimaryKey
+trait UsingDatetimeAsPrimaryKey
 {
-    public static function bootUsingTimestampAsPrimaryKey(): void
+    public static function bootUsingDatetimeAsPrimaryKey(): void
     {
         static::creating(function (self $model): void {
-            /* @var \Illuminate\Database\Eloquent\Model|\Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey $model */
+            /* @var \Illuminate\Database\Eloquent\Model|UsingDatetimeAsPrimaryKey $model */
             if (empty($model->{$model->getKeyName()})) {
                 $model->{$model->getKeyName()} = $model->generateKey();
             }
@@ -40,7 +39,7 @@ trait UsingTimestampAsPrimaryKey
                 $i = 0;
             }
             $i++;
-            $id = time() . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
+            $id = date('YmdHis') . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
             $row = static::query()->where($this->primaryKey, '=', $id)->exists();
         } while ($row);
         return (int)$id;

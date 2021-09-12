@@ -24,8 +24,6 @@ use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeSucceeded;
-use Larva\Transaction\Models\Traits\DateTimeFormatter;
-use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 use Larva\Transaction\TransactionException;
 use Yansongda\Pay\Exception\ContainerDependencyException;
@@ -33,9 +31,6 @@ use Yansongda\Pay\Exception\ContainerException;
 use Yansongda\Pay\Exception\InvalidParamsException;
 use Yansongda\Pay\Exception\ServiceNotFoundException;
 use Yansongda\Supports\Collection;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * 支付模型
@@ -76,7 +71,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class Charge extends Model
 {
-    use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
+    use SoftDeletes, Traits\UsingDatetimeAsPrimaryKey, Traits\DateTimeFormatter;
 
     public const STATE_SUCCESS = 'SUCCESS';
     public const STATE_REFUND = 'REFUND';

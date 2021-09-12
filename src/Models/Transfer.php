@@ -16,7 +16,6 @@ namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
 use Exception;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -53,7 +52,7 @@ use Larva\Transaction\Transaction;
  */
 class Transfer extends Model
 {
-    use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingTimestampAsPrimaryKey;
+    use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingDatetimeAsPrimaryKey;
 
     //付款状态
     public const STATUS_PENDING = 'PENDING';//待处理

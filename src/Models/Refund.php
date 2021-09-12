@@ -25,8 +25,6 @@ use Larva\Transaction\Events\RefundClosed;
 use Larva\Transaction\Events\RefundFailed;
 use Larva\Transaction\Events\RefundSucceeded;
 use Larva\Transaction\Jobs\HandleRefundJob;
-use Larva\Transaction\Models\Traits\DateTimeFormatter;
-use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 
 /**
@@ -51,7 +49,7 @@ use Larva\Transaction\Transaction;
  */
 class Refund extends Model
 {
-    use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
+    use SoftDeletes, Traits\UsingDatetimeAsPrimaryKey, Traits\DateTimeFormatter;
 
     // 退款状态机
     public const STATUS_PENDING = 'PENDING';//待处理
