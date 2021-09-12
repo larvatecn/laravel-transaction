@@ -13,6 +13,7 @@ use Dcat\Admin\Grid;
 use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Show;
 use Illuminate\Support\Carbon;
+use Larva\Transaction\Admin\Actions\RetryTransfer;
 use Larva\Transaction\Models\Transfer;
 use Larva\Transaction\Transaction;
 
@@ -74,6 +75,10 @@ class TransferController extends AdminController
             $grid->disableCreateButton();
             $grid->disableEditButton();
             $grid->disableDeleteButton();
+
+            $grid->actions(function (Grid\Displayers\Actions $actions) use ($grid) {
+                $actions->append(RetryTransfer::make());
+            });
             $grid->paginate(10);
         });
     }
