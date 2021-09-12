@@ -7,7 +7,8 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-namespace App\Admin\Controllers\Transaction;
+
+namespace Larva\Transaction\Admin\Controllers;
 
 use Dcat\Admin\Grid;
 use Dcat\Admin\Http\Controllers\AdminController;
@@ -65,7 +66,7 @@ class TransferController extends AdminController
             $grid->column('id', '流水号')->sortable();
             $grid->column('succeed', '已支付')->bool();
             $grid->column('amount', '付款金额')->display(function ($amount) {
-                return bcdiv($amount, 100, 2) . '元';
+                return (string)($amount / 100) . '元';
             });
             $grid->column('currency', '币种');
             $grid->column('description', '描述');
@@ -75,10 +76,6 @@ class TransferController extends AdminController
             $grid->disableCreateButton();
             $grid->disableEditButton();
             $grid->disableDeleteButton();
-
-            $grid->actions(function (Grid\Displayers\Actions $actions) use ($grid) {
-                $actions->append(RetryTransfer::make());
-            });
             $grid->paginate(10);
         });
     }

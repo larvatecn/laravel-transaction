@@ -7,7 +7,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-namespace App\Admin\Controllers\Transaction;
+namespace Larva\Transaction\Admin\Controllers;
 
 use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
