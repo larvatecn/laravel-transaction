@@ -14,6 +14,7 @@ use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Show;
 use Illuminate\Support\Carbon;
 use Larva\Transaction\Admin\Actions\ChargeRefund;
+use Larva\Transaction\Admin\Actions\RetryRefund;
 use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Models\Refund;
 use Larva\Transaction\Transaction;
@@ -75,6 +76,10 @@ class RefundController extends AdminController
             $grid->disableCreateButton();
             $grid->disableEditButton();
             $grid->disableDeleteButton();
+
+            $grid->actions(function (Grid\Displayers\Actions $actions) use ($grid) {
+                $actions->append(RetryRefund::make());
+            });
             $grid->paginate(10);
         });
     }

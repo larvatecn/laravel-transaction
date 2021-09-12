@@ -7,6 +7,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Jobs;
 
 use Illuminate\Bus\Queueable;
@@ -43,7 +44,7 @@ class HandleRefundJob implements ShouldQueue
      */
     public function handle()
     {
-        if ($this->refund->status == Refund::STATUS_PENDING) {
+        if ($this->refund->status == Refund::STATUS_PENDING || $this->refund->status == Refund::STATUS_ABNORMAL) {
             $this->refund->gatewayHandle();
         }
     }
