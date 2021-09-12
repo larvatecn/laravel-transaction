@@ -60,7 +60,6 @@ class TransferController extends AdminController
             $grid->quickSearch(['id', 'transaction_no']);
             $grid->model()->orderBy('id', 'desc');
             $grid->column('id', '流水号')->sortable();
-            $grid->column('transaction_no', '网关流水号');
             $grid->column('succeed', '已支付')->bool();
             $grid->column('amount', '付款金额')->display(function ($amount) {
                 return bcdiv($amount, 100, 2) . '元';
@@ -93,11 +92,6 @@ class TransferController extends AdminController
                 $show->width(4)->field('transaction_no', '网关流水号');
             });
             $show->row(function (Show\Row $show) {
-                $show->width(4)->field('trade_channel', '付款渠道')->using(Transaction::getChannelMaps());
-                $show->width(4)->field('status', '付款状态')->using(Transfer::getStatusMaps())->dot(Transfer::getStateDots());
-                $show->width(4)->field('recipient', '收款人')->json();
-            });
-            $show->row(function (Show\Row $show) {
                 $show->width(4)->field('currency', '币种');
                 $show->width(4)->field('amount', '付款金额')->as(function ($total_amount) {
                     return (string)($total_amount / 100) . '元';
@@ -105,8 +99,17 @@ class TransferController extends AdminController
                 $show->width(4)->field('description', '描述');
             });
             $show->row(function (Show\Row $show) {
+                $show->width(4)->field('trade_channel', '付款渠道')->using(Transaction::getChannelMaps());
+                $show->width(4)->field('status', '付款状态')->using(Transfer::getStatusMaps())->dot(Transfer::getStateDots());
+                $show->width(4)->field('recipient', '收款人')->json();
+            });
+            $show->row(function (Show\Row $show) {
                 $show->width(4)->field('succeed_at', '成功时间');
                 $show->width(4)->field('created_at', '创建时间');
+                $show->width(4)->field('failure', '失败信息')->json();
+            });
+            $show->row(function (Show\Row $show) {
+                $show->width(8)->field('extra', '网关信息')->json();
             });
             $show->disableEditButton();
             $show->disableDeleteButton();

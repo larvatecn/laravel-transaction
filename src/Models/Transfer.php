@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -183,10 +184,10 @@ class Transfer extends Model
     /**
      * 设置已付款
      * @param string $transactionNo
-     * @param array $params
+     * @param array $extra
      * @return bool
      */
-    public function markSucceeded(string $transactionNo, array $params = []): bool
+    public function markSucceeded(string $transactionNo, array $extra = []): bool
     {
         if ($this->succeed) {
             return true;
@@ -195,7 +196,7 @@ class Transfer extends Model
             'transaction_no' => $transactionNo,
             'transferred_at' => $this->freshTimestamp(),
             'status' => static::STATUS_SUCCESS,
-            'extra' => $params
+            'extra' => $extra
         ]);
         Event::dispatch(new TransferSucceeded($this));
         return $state;
@@ -205,11 +206,16 @@ class Transfer extends Model
      * 设置提现错误
      * @param string $code
      * @param string $desc
+     * @param array $extra
      * @return bool
      */
-    public function markFailed(string $code, string $desc): bool
+    public function markFailed(string $code, string $desc, array $extra = []): bool
     {
-        $res = $this->update(['status' => self::STATUS_ABNORMAL, 'failure' => ['code' => $code, 'desc' => $desc]]);
+        $res = $this->update([
+            'status' => self::STATUS_ABNORMAL,
+            'failure' => ['code' => $code, 'desc' => $desc],
+            'extra' => $extra
+        ]);
         Event::dispatch(new TransferFailed($this));
         return $res;
     }
@@ -222,6 +228,7 @@ class Transfer extends Model
     public function gatewayHandle(): Transfer
     {
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
+            $this->markFailed('Failed', '暂不支持微信通道。');
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $config = [
                 'out_biz_no' => (string)$this->id,

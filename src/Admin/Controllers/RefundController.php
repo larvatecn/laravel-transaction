@@ -1,12 +1,11 @@
 <?php
-
-declare(strict_types=1);
 /**
  * This is NOT a freeware, use is subject to license terms.
  *
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace App\Admin\Controllers\Transaction;
 
 use Dcat\Admin\Grid;
@@ -65,7 +64,6 @@ class RefundController extends AdminController
 
             $grid->column('id', '流水号')->sortable();
             $grid->column('charge_id', '付款单号');
-            $grid->column('transaction_no', '网关流水号');
             $grid->column('amount', '金额')->display(function ($amount) {
                 return (string)($amount / 100) . '元';
             });
@@ -92,7 +90,7 @@ class RefundController extends AdminController
         return Show::make($id, Refund::query(), function (Show $show) {
             $show->row(function (Show\Row $show) {
                 $show->width(4)->field('id', '退款单号');
-                $show->width(4)->field('charge_id', '付款单号');
+                $show->width(4)->field('charge_id', '收款单号');
                 $show->width(4)->field('transaction_no', '网关流水号');
             });
             $show->row(function (Show\Row $show) {
