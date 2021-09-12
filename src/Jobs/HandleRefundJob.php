@@ -44,7 +44,7 @@ class HandleRefundJob implements ShouldQueue
      */
     public function handle()
     {
-        if ($this->refund->status == Refund::STATUS_PENDING || $this->refund->status == Refund::STATUS_ABNORMAL) {
+        if ($this->refund->status == Refund::STATUS_PENDING) {
             $this->refund->gatewayHandle();
         }
     }

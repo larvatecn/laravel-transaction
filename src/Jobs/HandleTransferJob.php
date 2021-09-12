@@ -43,7 +43,7 @@ class HandleTransferJob implements ShouldQueue
      */
     public function handle()
     {
-        if ($this->transfer->status == Transfer::STATUS_PENDING || $this->transfer->status == Transfer::STATUS_ABNORMAL) {
+        if ($this->transfer->status == Transfer::STATUS_PENDING) {
             $this->transfer->gatewayHandle();
         }
     }
