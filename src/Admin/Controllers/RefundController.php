@@ -7,12 +7,16 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-namespace Larva\Transaction\Admin\Controllers;
+namespace App\Admin\Controllers\Transaction;
 
-use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Grid;
+use Dcat\Admin\Http\Controllers\AdminController;
+use Dcat\Admin\Show;
 use Illuminate\Support\Carbon;
+use Larva\Transaction\Admin\Actions\ChargeRefund;
+use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Models\Refund;
+use Larva\Transaction\Transaction;
 
 /**
  * 退款单
@@ -69,9 +73,41 @@ class RefundController extends AdminController
             $grid->column('reason', '描述');
             $grid->column('succeed_at', '成功时间')->sortable();
             $grid->column('created_at', '创建时间')->sortable();
-            $grid->disableActions();
             $grid->disableCreateButton();
+            $grid->disableEditButton();
+            $grid->disableDeleteButton();
             $grid->paginate(10);
+        });
+    }
+
+    /**
+     * Make a show builder.
+     *
+     * @param mixed $id
+     *
+     * @return Show
+     */
+    protected function detail($id): Show
+    {
+        return Show::make($id, Refund::query(), function (Show $show) {
+            $show->row(function (Show\Row $show) {
+                $show->width(4)->field('id', '退款单号');
+                $show->width(4)->field('charge_id', '付款单号');
+                $show->width(4)->field('transaction_no', '网关流水号');
+            });
+            $show->row(function (Show\Row $show) {
+                $show->width(4)->field('reason', '退款描述');
+                $show->width(4)->field('amount', '退款金额')->as(function ($total_amount) {
+                    return (string)($total_amount / 100) . '元';
+                });
+                $show->width(4)->field('status', '退款状态')->using(Refund::getStatusMaps())->dot(Refund::getStateDots());
+            });
+            $show->row(function (Show\Row $show) {
+                $show->width(4)->field('succeed_at', '成功时间');
+                $show->width(4)->field('created_at', '创建时间');
+            });
+            $show->disableEditButton();
+            $show->disableDeleteButton();
         });
     }
 }

@@ -40,8 +40,8 @@ use Larva\Transaction\Transaction;
  * @property array $failure 失败信息
  * @property array $recipient 接收者
  * @property array $extra 扩展数据
- * @property CarbonInterface|null $succeed_at 交易成功时间
- * @property CarbonInterface|null $deleted_at 软删除时间
+ * @property CarbonInterface|null $succeed_at 成功时间
+ * @property CarbonInterface|null $deleted_at 删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
  *
@@ -118,6 +118,16 @@ class Transfer extends Model
     ];
 
     /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $statusDots = [
+        self::STATUS_PENDING => 'info',
+        self::STATUS_SUCCESS => 'success',
+        self::STATUS_ABNORMAL => 'error',
+    ];
+
+    /**
      * The "booting" method of the model.
      *
      * @return void
@@ -141,6 +151,15 @@ class Transfer extends Model
     public static function getStatusMaps(): array
     {
         return static::$statusMaps;
+    }
+
+    /**
+     * 获取状态Dot
+     * @return string[]
+     */
+    public static function getStateDots(): array
+    {
+        return static::$statusDots;
     }
 
     /**
