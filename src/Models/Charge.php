@@ -425,7 +425,7 @@ class Charge extends Model
             if ($this->metadata && isset($this->metadata['buyer_id'])) {
                 $order['buyer_id'] = $this->metadata['buyer_id'];
             }
-            $order['notify_url'] = route('transaction.notify.alipay');
+            $order['_notify_url'] = route('transaction.notify.alipay');
             if ($this->trade_type == 'wap') {
                 $order['quit_url'] = route('transaction.callback.alipay');
             }
