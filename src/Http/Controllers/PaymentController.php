@@ -33,7 +33,7 @@ class PaymentController
      *
      * @var ResponseFactory
      */
-    protected $response;
+    protected ResponseFactory $response;
 
     /**
      * CodeController constructor.
@@ -44,33 +44,25 @@ class PaymentController
         $this->response = $response;
     }
 
+    /**
+     * 支付宝PC和手机付款的回调页面
+     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
+     * @throws \Yansongda\Pay\Exception\ContainerException
+     * @throws \Yansongda\Pay\Exception\InvalidParamsException
+     * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
+     */
     public function alipayCallback()
     {
-        $pay = Transaction::getGateway($channel);
-    }
-
-    /**
-     * 付款回调
-     * @param string $channel
-     */
-    public function paymentCallback(string $channel)
-    {
-        try {
-            $params = $pay->verify(); // 验签
-            $charge = null;
-            if ($channel == Transaction::CHANNEL_ALIPAY) {
-                if (isset($params['trade_status']) && ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED')) {
-                    $charge = Transaction::getCharge($params['out_trade_no']);
-                    $charge->markSucceeded($params['trade_no']);
-                    if ($charge->metadata['return_url']) {
-                        $this->response->redirectTo($charge->metadata['return_url']);
-                    }
-                }
+        $pay = Transaction::alipay();
+        $params = $pay->callback();
+        if (isset($params['trade_status']) && ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED')) {
+            $charge = Transaction::getCharge($params['out_trade_no']);
+            $charge->markSucceeded($params['trade_no']);
+            if ($charge->metadata['return_url']) {
+                $this->response->redirectTo($charge->metadata['return_url']);
             }
-            $this->response->view('transaction:return', ['charge' => $charge]);
-        } catch (\Exception $e) {
-            Log::error($e->getMessage());
         }
+        $this->response->view('transaction:return', ['charge' => $charge]);
     }
 
     /**

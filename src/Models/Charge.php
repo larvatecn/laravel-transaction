@@ -427,7 +427,10 @@ class Charge extends Model
             }
             $order['_notify_url'] = route('transaction.notify.alipay');
             if ($this->trade_type == 'wap') {
+                $order['_return_url'] = route('transaction.callback.alipay');
                 $order['quit_url'] = route('transaction.callback.alipay');
+            } elseif ($this->trade_type == Transaction::TRADE_TYPE_WEB) {
+                $order['_return_url'] = route('transaction.callback.alipay');
             }
         } else {
             throw new TransactionException('The channel does not exist.');
