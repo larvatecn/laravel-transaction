@@ -13,7 +13,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * �쳣
+ * 异常
  * @author Tongle Xu <xutongle@gmail.com>
  */
 class TransactionException extends \RuntimeException
