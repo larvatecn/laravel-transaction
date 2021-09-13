@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -202,12 +203,12 @@ class Transfer extends Model
 
     /**
      * 设置提现错误
-     * @param string $code
+     * @param string|int $code
      * @param string $desc
      * @param array $extra
      * @return bool
      */
-    public function markFailed(string $code, string $desc, array $extra = []): bool
+    public function markFailed($code, string $desc, array $extra = []): bool
     {
         $res = $this->update([
             'status' => self::STATUS_ABNORMAL,
@@ -241,10 +242,10 @@ class Transfer extends Model
             ];
             try {
                 $response = Transaction::alipay()->transfer($config);
-                if ($response->code == '10000' && ($response->status == 'SUCCESS' || $response->status == 'DEALING')) {
+                if ((isset($response->code) && $response->code == 10000) && ($response->status == 'SUCCESS' || $response->status == 'DEALING')) {
                     $this->markSucceeded($response->order_id, $response->toArray());
                 } else {
-                    $this->markFailed($response->sub_code, $response->sub_msg);
+                    $this->markFailed((string)$response->sub_code, $response->sub_msg);
                 }
             } catch (Exception $exception) {//设置提现失败
                 $this->markFailed('FAIL', $exception->getMessage());

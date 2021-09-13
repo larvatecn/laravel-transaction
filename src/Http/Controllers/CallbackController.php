@@ -47,10 +47,10 @@ class CallbackController
         $pay = Transaction::alipay();
         $params = $pay->callback();
         $result = Transaction::alipay()->find(['out_trade_no' => $params['out_trade_no']]);
-        if (isset($params['trade_status']) && ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED')) {
-            $charge = Transaction::getCharge($params['out_trade_no']);
-            $charge->markSucceeded($params['trade_no'], $result->toArray());
-            if ($charge->metadata['return_url']) {
+        if (isset($result['trade_status']) && ($result['trade_status'] == 'TRADE_SUCCESS' || $result['trade_status'] == 'TRADE_FINISHED')) {
+            $charge = Transaction::getCharge($result['out_trade_no']);
+            $charge->markSucceeded($result['trade_no'], $result->toArray());
+            if (isset($charge->metadata['return_url'])) {
                 $this->response->redirectTo($charge->metadata['return_url']);
             }
         }
@@ -64,11 +64,12 @@ class CallbackController
     public function scan(string $id)
     {
         $charge = Transaction::getCharge($id);
-        if ($charge && $charge->paid) {
-            if ($charge->metadata['return_url']) {
+        if ($charge->paid) {
+            if (isset($charge->metadata['return_url'])) {
                 $this->response->redirectTo($charge->metadata['return_url']);
+            } else {
+                $this->response->view('transaction:return', ['charge' => $charge]);
             }
-            $this->response->view('transaction:return', ['charge' => $charge]);
         }
     }
 }

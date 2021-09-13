@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', __('Charge Return'))
+@section('title', __('Payment Return'))
 
 @section('content')
     <div class="container">
         <div class="row">
             <div class="col-12">
-                @if($charge)
+                @if($charge->paid)
                     支付成功！
                 @endif
             </div>

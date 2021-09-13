@@ -65,6 +65,7 @@ use Yansongda\Supports\Collection;
  * @property-read bool $reversed 是否已撤销
  * @property-read bool $closed 是否已关闭
  * @property-read string $stateDesc 状态描述
+ * @property-read string $outTradeNo
  * @property-read int $refundableAmount 可退款金额
  *
  * @author Tongle Xu <xutongle@gmail.com>
@@ -279,26 +280,12 @@ class Charge extends Model
     }
 
     /**
-     * 发起退款
-     * @param string $reason 退款原因
-     * @return Refund
-     * @throws TransactionException
+     * 获取OutTradeNo
+     * @return string
      */
-    public function refund(string $reason): Refund
+    public function getOutTradeNoAttribute(): string
     {
-        if (!$this->paid) {
-            throw new TransactionException('Not paid, no refund.');
-        } elseif ($this->refundableAmount == 0) {
-            throw new TransactionException('No refundable amount.');
-        } else {
-            /** @var Refund $refund */
-            $refund = $this->refunds()->create([
-                'charge_id' => $this->id,
-                'amount' => $this->total_amount,
-                'reason' => $reason,
-            ]);
-            return $refund;
-        }
+        return (string)$this->id;
     }
 
     /**
@@ -326,11 +313,11 @@ class Charge extends Model
 
     /**
      * 设置支付错误
-     * @param string $code
+     * @param string|int $code
      * @param string $desc
      * @return bool
      */
-    public function markFailed(string $code, string $desc, array $extra = []): bool
+    public function markFailed($code, string $desc, array $extra = []): bool
     {
         $state = $this->updateQuietly([
             'state' => static::STATE_PAYERROR,
@@ -343,24 +330,53 @@ class Charge extends Model
     }
 
     /**
+     * 发起退款
+     * @param string $reason 退款原因
+     * @return Refund
+     * @throws TransactionException
+     */
+    public function refund(string $reason): Refund
+    {
+        if (!$this->paid) {
+            throw new TransactionException('Not paid, no refund.');
+        } elseif ($this->refundableAmount == 0) {
+            throw new TransactionException('No refundable amount.');
+        } else {
+            /** @var Refund $refund */
+            $refund = $this->refunds()->create([
+                'charge_id' => $this->id,
+                'amount' => $this->total_amount,
+                'reason' => $reason,
+            ]);
+            return $refund;
+        }
+    }
+    
+    /**
      * 关闭该笔收单
      * @return bool
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
-     * @throws \Yansongda\Pay\Exception\ContainerException
-     * @throws \Yansongda\Pay\Exception\InvalidParamsException
-     * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
     public function close(): bool
     {
         if ($this->state == static::STATE_NOTPAY) {
-            $channel = Transaction::getChannel($this->trade_channel);
-            $result = $channel->close(['out_trade_no' => $this->id]);
-            if ($result) {
-                $this->updateQuietly(['state' => static::STATE_CLOSED, 'credential' => []]);
+            if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
+                $result = Transaction::wechat()->close(['out_trade_no' => $this->outTradeNo]);
+                $this->updateQuietly(['state' => static::STATE_CLOSED, 'credential' => [], 'extra' => $result->toArray()]);
                 Event::dispatch(new ChargeClosed($this));
                 return true;
+            } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
+                $result = Transaction::alipay()->close(['out_trade_no' => $this->outTradeNo]);
+                if (isset($result->code) && $result->code == 10000) {
+                    $this->updateQuietly(['state' => static::STATE_CLOSED, 'credential' => [], 'extra' => $result->toArray()]);
+                    Event::dispatch(new ChargeClosed($this));
+                    return true;
+                } else {
+                    $this->updateQuietly(['extra' => $result->toArray()]);
+                    return false;
+                }
+            } else {
+                return false;
             }
-            return false;
         }
         return false;
     }
@@ -386,7 +402,7 @@ class Charge extends Model
     public function prePay()
     {
         $order = [
-            'out_trade_no' => (string)$this->id,
+            'out_trade_no' => $this->outTradeNo,
         ];
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order['description'] = $this->description ?? $this->subject;

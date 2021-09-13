@@ -214,12 +214,12 @@ class Refund extends Model
 
     /**
      * 关闭退款
-     * @param string $code
+     * @param string|int $code
      * @param string $desc
      * @param array $extra
      * @return bool
      */
-    public function markClosed(string $code, string $desc, array $extra = []): bool
+    public function markClosed($code, string $desc, array $extra = []): bool
     {
         $succeed = $this->updateQuietly([
             'status' => static::STATUS_CLOSED,
@@ -296,7 +296,11 @@ class Refund extends Model
             ];
             try {
                 $response = Transaction::alipay()->refund($order);
-                $this->markSucceeded($response->trade_no, $response->toArray());
+                if (isset($response->code) && $response->code == 10000) {
+                    $this->markSucceeded($response->trade_no, $response->toArray());
+                } else {
+                    $this->markFailed((string)$response->sub_code, $response->sub_msg, $response->toArray());
+                }
             } catch (Exception $exception) {//设置失败
                 $this->markFailed('FAIL', $exception->getMessage());
             }
