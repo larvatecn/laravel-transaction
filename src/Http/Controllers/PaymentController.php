@@ -51,7 +51,7 @@ class PaymentController
     public function paymentCallback(string $channel)
     {
         try {
-            $pay = Transaction::getGateway($channel);
+            $pay = Transaction::getChannel($channel);
             $params = $pay->verify(); // 验签
             $charge = null;
             if ($channel == Transaction::CHANNEL_ALIPAY) {

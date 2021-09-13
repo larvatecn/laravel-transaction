@@ -30,7 +30,7 @@ use Larva\Transaction\Transaction;
 /**
  * 企业付款模型，处理提现
  *
- * @property string $id 付款单ID
+ * @property int $id 付款单ID
  * @property string $trade_channel 付款渠道
  * @property string $status 状态
  * @property int $amount 金额
@@ -40,8 +40,8 @@ use Larva\Transaction\Transaction;
  * @property array $failure 失败信息
  * @property array $recipient 接收者
  * @property array $extra 扩展数据
- * @property CarbonInterface|null $succeed_at 交易成功时间
- * @property CarbonInterface|null $deleted_at 软删除时间
+ * @property CarbonInterface|null $succeed_at 成功时间
+ * @property CarbonInterface|null $deleted_at 删除时间
  * @property CarbonInterface $created_at 创建时间
  * @property CarbonInterface $updated_at 更新时间
  *
@@ -53,7 +53,7 @@ use Larva\Transaction\Transaction;
  */
 class Transfer extends Model
 {
-    use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingTimestampAsPrimaryKey;
+    use SoftDeletes, Traits\DateTimeFormatter, Traits\UsingDatetimeAsPrimaryKey;
 
     //付款状态
     public const STATUS_PENDING = 'PENDING';//待处理
@@ -118,6 +118,16 @@ class Transfer extends Model
     ];
 
     /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $statusDots = [
+        self::STATUS_PENDING => 'info',
+        self::STATUS_SUCCESS => 'success',
+        self::STATUS_ABNORMAL => 'error',
+    ];
+
+    /**
      * The "booting" method of the model.
      *
      * @return void
@@ -144,6 +154,15 @@ class Transfer extends Model
     }
 
     /**
+     * 获取状态Dot
+     * @return string[]
+     */
+    public static function getStateDots(): array
+    {
+        return static::$statusDots;
+    }
+
+    /**
      * 多态关联
      * @return MorphTo
      */
@@ -164,10 +183,10 @@ class Transfer extends Model
     /**
      * 设置已付款
      * @param string $transactionNo
-     * @param array $params
+     * @param array $extra
      * @return bool
      */
-    public function markSucceeded(string $transactionNo, array $params = []): bool
+    public function markSucceeded(string $transactionNo, array $extra = []): bool
     {
         if ($this->succeed) {
             return true;
@@ -176,7 +195,7 @@ class Transfer extends Model
             'transaction_no' => $transactionNo,
             'transferred_at' => $this->freshTimestamp(),
             'status' => static::STATUS_SUCCESS,
-            'extra' => $params
+            'extra' => $extra
         ]);
         Event::dispatch(new TransferSucceeded($this));
         return $state;
@@ -186,11 +205,16 @@ class Transfer extends Model
      * 设置提现错误
      * @param string $code
      * @param string $desc
+     * @param array $extra
      * @return bool
      */
-    public function markFailed(string $code, string $desc): bool
+    public function markFailed(string $code, string $desc, array $extra = []): bool
     {
-        $res = $this->update(['status' => self::STATUS_ABNORMAL, 'failure' => ['code' => $code, 'desc' => $desc]]);
+        $res = $this->update([
+            'status' => self::STATUS_ABNORMAL,
+            'failure' => ['code' => $code, 'desc' => $desc],
+            'extra' => $extra
+        ]);
         Event::dispatch(new TransferFailed($this));
         return $res;
     }
@@ -202,7 +226,7 @@ class Transfer extends Model
      */
     public function gatewayHandle(): Transfer
     {
-        $channel = Transaction::getGateway($this->trade_channel);
+        $channel = Transaction::getChannel($this->trade_channel);
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
             $config = [
                 'partner_trade_no' => $this->id,

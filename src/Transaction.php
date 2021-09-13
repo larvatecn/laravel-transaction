@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction;
 
 use Illuminate\Support\Facades\Facade;
@@ -31,6 +32,14 @@ class Transaction extends Facade
     //支持的交易通道
     public const CHANNEL_WECHAT = 'wechat';
     public const CHANNEL_ALIPAY = 'alipay';
+
+    //交易类型
+    public const TRADE_TYPE_WEB = 'web';
+    public const TRADE_TYPE_WAP = 'wap';
+    public const TRADE_TYPE_APP = 'app';
+    public const TRADE_TYPE_POS = 'pos';
+    public const TRADE_TYPE_SCAN = 'scan';
+    public const TRADE_TYPE_MINI = 'mini';
 
     /**
      * Return the facade accessor.
@@ -63,12 +72,42 @@ class Transaction extends Facade
     }
 
     /**
+     * 支持的网关
+     *
+     * @return string[]
+     */
+    public static function getChannelMaps(): array
+    {
+        return [
+            static::CHANNEL_WECHAT => '微信',
+            static::CHANNEL_ALIPAY => '支付宝',
+        ];
+    }
+
+    /**
+     * 支付类型
+     *
+     * @return string[]
+     */
+    public static function getTradeTypeMaps(): array
+    {
+        return [
+            static::TRADE_TYPE_WEB => '电脑支付',
+            static::TRADE_TYPE_WAP => '手机网站支付',
+            static::TRADE_TYPE_APP => 'APP 支付',
+            static::TRADE_TYPE_POS => '刷卡支付',
+            static::TRADE_TYPE_SCAN => '扫码支付',
+            static::TRADE_TYPE_MINI => '小程序支付',
+        ];
+    }
+
+    /**
      * 获取交易网关
      * @param string $channel
      * @return Alipay|Wechat
      * @throws TransactionException
      */
-    public static function getGateway(string $channel)
+    public static function getChannel(string $channel)
     {
         if ($channel == static::CHANNEL_WECHAT) {
             return static::wechat();

@@ -21,16 +21,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Event;
 use Larva\Transaction\Casts\Failure;
+use Larva\Transaction\Events\RefundClosed;
 use Larva\Transaction\Events\RefundFailed;
 use Larva\Transaction\Events\RefundSucceeded;
 use Larva\Transaction\Jobs\HandleRefundJob;
-use Larva\Transaction\Models\Traits\DateTimeFormatter;
-use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 
 /**
  * 退款处理模型
- * @property string $id 退款流水号
+ * @property int $id 退款流水号
  * @property int $charge_id 付款ID
  * @property string $transaction_no 网关流水号
  * @property int $amount 退款金额/单位分
@@ -50,7 +49,7 @@ use Larva\Transaction\Transaction;
  */
 class Refund extends Model
 {
-    use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
+    use SoftDeletes, Traits\UsingDatetimeAsPrimaryKey, Traits\DateTimeFormatter;
 
     // 退款状态机
     public const STATUS_PENDING = 'PENDING';//待处理
@@ -116,6 +115,18 @@ class Refund extends Model
     ];
 
     /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $statusDots = [
+        self::STATUS_PENDING => 'info',
+        self::STATUS_SUCCESS => 'success',
+        self::STATUS_CLOSED => 'info',
+        self::STATUS_PROCESSING => 'warning',
+        self::STATUS_ABNORMAL => 'error',
+    ];
+
+    /**
      * The "booting" method of the model.
      *
      * @return void
@@ -142,6 +153,15 @@ class Refund extends Model
     }
 
     /**
+     * 获取状态Dot
+     * @return string[]
+     */
+    public static function getStateDots(): array
+    {
+        return static::$statusDots;
+    }
+
+    /**
      * 关联收单
      *
      * @return BelongsTo
@@ -164,13 +184,51 @@ class Refund extends Model
      * 设置退款错误
      * @param string $code
      * @param string $desc
+     * @param array $extra
      * @return bool
      */
-    public function markFailed(string $code, string $desc): bool
+    public function markFailed(string $code, string $desc, array $extra = []): bool
     {
-        $succeed = $this->updateQuietly(['status' => self::STATUS_ABNORMAL, 'failure' => ['code' => $code, 'desc' => $desc]]);
+        $succeed = $this->updateQuietly([
+            'status' => self::STATUS_ABNORMAL,
+            'failure' => ['code' => $code, 'desc' => $desc],
+            'extra' => $extra
+        ]);
         Charge::query()->where('id', $this->charge_id)->decrement('refunded_amount', $this->amount);
         Event::dispatch(new RefundFailed($this));
+        return $succeed;
+    }
+
+    /**
+     * 设置退款处理中
+     * @param array $extra
+     * @return bool
+     */
+    public function markProcessing(array $extra = []): bool
+    {
+        return $this->updateQuietly([
+            'status' => self::STATUS_PROCESSING,
+            'extra' => $extra
+        ]);
+    }
+
+    /**
+     * 关闭退款
+     * @param string $code
+     * @param string $desc
+     * @param array $extra
+     * @return bool
+     */
+    public function markClosed(string $code, string $desc, array $extra = []): bool
+    {
+        $succeed = $this->updateQuietly([
+            'status' => static::STATUS_CLOSED,
+            'credential' => [],
+            'failure' => ['code' => $code, 'desc' => $desc],
+            'extra' => $extra
+        ]);
+        Charge::query()->where('id', $this->charge_id)->decrement('refunded_amount', $this->amount);
+        Event::dispatch(new RefundClosed($this));
         return $succeed;
     }
 
@@ -185,7 +243,12 @@ class Refund extends Model
         if ($this->succeed) {
             return true;
         }
-        $this->updateQuietly(['status' => self::STATUS_SUCCESS, 'transaction_no' => $transactionNo, 'succeed_at' => $this->freshTimestamp(), 'extra' => $extra]);
+        $this->updateQuietly([
+            'status' => self::STATUS_SUCCESS,
+            'transaction_no' => $transactionNo,
+            'succeed_at' => $this->freshTimestamp(),
+            'extra' => $extra
+        ]);
         Event::dispatch(new RefundSucceeded($this));
         return $this->succeed;
     }
@@ -197,7 +260,7 @@ class Refund extends Model
      */
     public function gatewayHandle(): Refund
     {
-        $channel = Transaction::getGateway($this->charge->trade_channel);
+        $channel = Transaction::getChannel($this->charge->trade_channel);
         if ($this->charge->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order = [
                 'out_refund_no' => $this->id,

@@ -27,8 +27,6 @@ use Larva\Transaction\Casts\Failure;
 use Larva\Transaction\Events\ChargeClosed;
 use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeSucceeded;
-use Larva\Transaction\Models\Traits\DateTimeFormatter;
-use Larva\Transaction\Models\Traits\UsingTimestampAsPrimaryKey;
 use Larva\Transaction\Transaction;
 use Larva\Transaction\TransactionException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -80,7 +78,7 @@ use Yansongda\Supports\Collection;
  */
 class Charge extends Model
 {
-    use SoftDeletes, UsingTimestampAsPrimaryKey, DateTimeFormatter;
+    use SoftDeletes, Traits\UsingDatetimeAsPrimaryKey, Traits\DateTimeFormatter;
 
     public const STATE_SUCCESS = 'SUCCESS';
     public const STATE_REFUND = 'REFUND';
@@ -159,6 +157,21 @@ class Charge extends Model
     ];
 
     /**
+     * 交易状态，枚举值
+     * @var array|string[]
+     */
+    protected static array $stateDots = [
+        self::STATE_SUCCESS => 'success',
+        self::STATE_REFUND => 'warning',
+        self::STATE_NOTPAY => 'info',
+        self::STATE_CLOSED => 'info',
+        self::STATE_REVOKED => 'info',//已撤销（仅付款码支付会返回）
+        self::STATE_USERPAYING => 'info',//用户支付中（仅付款码支付会返回）
+        self::STATE_PAYERROR => 'error',//支付失败（仅付款码支付会返回）
+        self::STATE_ACCEPT => 'warning',
+    ];
+
+    /**
      * The "booting" method of the model.
      *
      * @return void
@@ -185,6 +198,15 @@ class Charge extends Model
     public static function getStateMaps(): array
     {
         return static::$stateMaps;
+    }
+
+    /**
+     * 获取状态Dot
+     * @return string[]
+     */
+    public static function getStateDots(): array
+    {
+        return static::$stateDots;
     }
 
     /**
@@ -334,7 +356,7 @@ class Charge extends Model
     public function close(): bool
     {
         if ($this->state == static::STATE_NOTPAY) {
-            $channel = Transaction::getGateway($this->trade_channel);
+            $channel = Transaction::getChannel($this->trade_channel);
             try {
                 $result = $channel->close($this->id);
                 if ($result) {
@@ -372,7 +394,7 @@ class Charge extends Model
      */
     public function prePay()
     {
-        $channel = Transaction::getGateway($this->trade_channel);
+        $channel = Transaction::getChannel($this->trade_channel);
         $order = [
             'out_trade_no' => $this->id,
         ];
