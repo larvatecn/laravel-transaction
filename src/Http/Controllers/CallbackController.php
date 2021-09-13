@@ -1,9 +1,4 @@
 <?php
-/**
- * This is NOT a freeware, use is subject to license terms
- * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
- * @link http://www.larva.com.cn/
- */
 
 declare(strict_types=1);
 /**
@@ -15,18 +10,13 @@ declare(strict_types=1);
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Contracts\Routing\ResponseFactory;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
-use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Transaction;
 
 /**
- * 付款回调页面
- *
- * @author Tongle Xu <xutongle@gmail.com>
+ * 回调页面
+ * @author Tongle Xu <xutongle@msn.com>
  */
-class PaymentController
+class CallbackController
 {
     /**
      * The response factory implementation.
@@ -51,7 +41,7 @@ class PaymentController
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
-    public function alipayCallback()
+    public function alipay()
     {
         $pay = Transaction::alipay();
         $params = $pay->callback();
@@ -62,15 +52,14 @@ class PaymentController
                 $this->response->redirectTo($charge->metadata['return_url']);
             }
         }
-        $this->response->view('transaction:return', ['charge' => $charge]);
+        $this->response->view('transaction:return', ['charge' => $charge ?? null]);
     }
 
     /**
      * 扫码付成功回调
      * @param string $id
-     * @return JsonResponse
      */
-    public function paymentSuccess(string $id): JsonResponse
+    public function scan(string $id)
     {
         $charge = Transaction::getCharge($id);
         if ($charge && $charge->paid) {
@@ -79,20 +68,5 @@ class PaymentController
             }
             $this->response->view('transaction:return', ['charge' => $charge]);
         }
-        throw (new ModelNotFoundException())->setModel(Charge::class, $id);
-    }
-
-    /**
-     * 查询交易状态
-     * @param string $id
-     * @return JsonResponse
-     */
-    public function query(string $id): JsonResponse
-    {
-        $charge = Transaction::getCharge($id);
-        if ($charge) {
-            return $this->response->json($charge->toArray());
-        }
-        throw (new ModelNotFoundException())->setModel(Charge::class, $id);
     }
 }
