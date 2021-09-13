@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
@@ -72,6 +71,7 @@ use Yansongda\Supports\Collection;
  * @property-read bool $reversed 是否已撤销
  * @property-read bool $closed 是否已关闭
  * @property-read string $stateDesc 状态描述
+ * @property-read string $outTradeNo
  * @property-read int $refundableAmount 可退款金额
  *
  * @author Tongle Xu <xutongle@gmail.com>
@@ -286,26 +286,12 @@ class Charge extends Model
     }
 
     /**
-     * 发起退款
-     * @param string $reason 退款原因
-     * @return Refund
-     * @throws TransactionException
+     * 获取OutTradeNo
+     * @return string
      */
-    public function refund(string $reason): Refund
+    public function getOutTradeNoAttribute(): string
     {
-        if (!$this->paid) {
-            throw new TransactionException('Not paid, no refund.');
-        } elseif ($this->refundableAmount == 0) {
-            throw new TransactionException('No refundable amount.');
-        } else {
-            /** @var Refund $refund */
-            $refund = $this->refunds()->create([
-                'charge_id' => $this->id,
-                'amount' => $this->total_amount,
-                'reason' => $reason,
-            ]);
-            return $refund;
-        }
+        return (string)$this->id;
     }
 
     /**
@@ -333,19 +319,43 @@ class Charge extends Model
 
     /**
      * 设置支付错误
-     * @param string $code
+     * @param string|int $code
      * @param string $desc
      * @return bool
      */
-    public function markFailed(string $code, string $desc): bool
+    public function markFailed($code, string $desc, array $extra = []): bool
     {
         $state = $this->updateQuietly([
             'state' => static::STATE_PAYERROR,
             'credential' => [],
-            'failure' => ['code' => $code, 'desc' => $desc]
+            'failure' => ['code' => $code, 'desc' => $desc],
+            'extra' => $extra
         ]);
         Event::dispatch(new ChargeFailed($this));
         return $state;
+    }
+
+    /**
+     * 发起退款
+     * @param string $reason 退款原因
+     * @return Refund
+     * @throws TransactionException
+     */
+    public function refund(string $reason): Refund
+    {
+        if (!$this->paid) {
+            throw new TransactionException('Not paid, no refund.');
+        } elseif ($this->refundableAmount == 0) {
+            throw new TransactionException('No refundable amount.');
+        } else {
+            /** @var Refund $refund */
+            $refund = $this->refunds()->create([
+                'charge_id' => $this->id,
+                'amount' => $this->total_amount,
+                'reason' => $reason,
+            ]);
+            return $refund;
+        }
     }
 
     /**
@@ -374,11 +384,10 @@ class Charge extends Model
 
     /**
      * 获取指定渠道的支付凭证
-     * @param string $channel
-     * @param string $type
-     * @param array $metadata
+     * @param string $channel 渠道
+     * @param string $type 通道类型
+     * @param array $metadata 元数据
      * @return array
-     * @throws InvalidGatewayException
      */
     public function getCredential(string $channel, string $type, array $metadata = []): array
     {
@@ -390,13 +399,12 @@ class Charge extends Model
 
     /**
      * 订单付款预下单
-     * @throws InvalidGatewayException
      */
     public function prePay()
     {
         $channel = Transaction::getChannel($this->trade_channel);
         $order = [
-            'out_trade_no' => $this->id,
+            'out_trade_no' => $this->outTradeNo,
         ];
         if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
             $order['spbill_create_ip'] = $this->client_ip;

@@ -16,7 +16,6 @@ namespace Larva\Transaction\Models;
 
 use Carbon\CarbonInterface;
 use Exception;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -203,12 +202,12 @@ class Transfer extends Model
 
     /**
      * 设置提现错误
-     * @param string $code
+     * @param string|int $code
      * @param string $desc
      * @param array $extra
      * @return bool
      */
-    public function markFailed(string $code, string $desc, array $extra = []): bool
+    public function markFailed($code, string $desc, array $extra = []): bool
     {
         $res = $this->update([
             'status' => self::STATUS_ABNORMAL,

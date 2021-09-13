@@ -214,12 +214,12 @@ class Refund extends Model
 
     /**
      * 关闭退款
-     * @param string $code
+     * @param string|int $code
      * @param string $desc
      * @param array $extra
      * @return bool
      */
-    public function markClosed(string $code, string $desc, array $extra = []): bool
+    public function markClosed($code, string $desc, array $extra = []): bool
     {
         $succeed = $this->updateQuietly([
             'status' => static::STATUS_CLOSED,
