@@ -60,10 +60,11 @@ class NotifyController
     public function alipay(Request $request): ResponseInterface
     {
         $pay = Transaction::alipay();
-        $result = $pay->callback();
-        if ($result['trade_status'] == 'TRADE_SUCCESS' || $result['trade_status'] == 'TRADE_FINISHED') {
+        $params = $pay->callback();
+        $result = Transaction::alipay()->find(['out_trade_no' => $params['out_trade_no']]);
+        if (isset($result['trade_status']) && ($result['trade_status'] == 'TRADE_SUCCESS' || $result['trade_status'] == 'TRADE_FINISHED')) {
             $charge = Transaction::getCharge($result['out_trade_no']);
-            $charge->markSucceeded($result['trade_no']);
+            $charge->markSucceeded($result['trade_no'], $result->toArray());
         }
         Log::debug('alipay notify', $result->toArray());
         return $pay->success();

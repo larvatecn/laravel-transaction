@@ -7,6 +7,7 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
+
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -45,9 +46,10 @@ class CallbackController
     {
         $pay = Transaction::alipay();
         $params = $pay->callback();
+        $result = Transaction::alipay()->find(['out_trade_no' => $params['out_trade_no']]);
         if (isset($params['trade_status']) && ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED')) {
             $charge = Transaction::getCharge($params['out_trade_no']);
-            $charge->markSucceeded($params['trade_no']);
+            $charge->markSucceeded($params['trade_no'], $result->toArray());
             if ($charge->metadata['return_url']) {
                 $this->response->redirectTo($charge->metadata['return_url']);
             }

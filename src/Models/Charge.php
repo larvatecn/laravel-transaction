@@ -330,12 +330,13 @@ class Charge extends Model
      * @param string $desc
      * @return bool
      */
-    public function markFailed(string $code, string $desc): bool
+    public function markFailed(string $code, string $desc, array $extra = []): bool
     {
         $state = $this->updateQuietly([
             'state' => static::STATE_PAYERROR,
             'credential' => [],
-            'failure' => ['code' => $code, 'desc' => $desc]
+            'failure' => ['code' => $code, 'desc' => $desc],
+            'extra' => $extra
         ]);
         Event::dispatch(new ChargeFailed($this));
         return $state;
@@ -423,7 +424,7 @@ class Charge extends Model
             $order['_notify_url'] = route('transaction.notify.alipay');
             if ($this->trade_type == 'wap') {
                 $order['_return_url'] = route('transaction.callback.alipay');
-                $order['quit_url'] = route('transaction.callback.alipay');
+                $order['quit_url'] = config('app.url');
             } elseif ($this->trade_type == Transaction::TRADE_TYPE_WEB) {
                 $order['_return_url'] = route('transaction.callback.alipay');
             }
