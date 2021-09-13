@@ -13,6 +13,7 @@ use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
 use Dcat\Admin\Http\Controllers\AdminController;
 use Illuminate\Support\Carbon;
+use Larva\Transaction\Admin\Actions\ChargeClose;
 use Larva\Transaction\Admin\Actions\ChargeRefund;
 use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Transaction;
@@ -87,6 +88,9 @@ class ChargeController extends AdminController
             $grid->disableCreateButton();
             $grid->disableEditButton();
             $grid->disableDeleteButton();
+            $grid->actions(function (Grid\Displayers\Actions $actions) use ($grid) {
+                $actions->append(ChargeClose::make());
+            });
             $grid->paginate(10);
         });
     }

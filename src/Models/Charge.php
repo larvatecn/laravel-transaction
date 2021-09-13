@@ -351,7 +351,7 @@ class Charge extends Model
             return $refund;
         }
     }
-    
+
     /**
      * 关闭该笔收单
      * @return bool
@@ -361,7 +361,7 @@ class Charge extends Model
         if ($this->state == static::STATE_NOTPAY) {
             if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
                 $result = Transaction::wechat()->close(['out_trade_no' => $this->outTradeNo]);
-                $this->updateQuietly(['state' => static::STATE_CLOSED, 'credential' => [], 'extra' => $result->toArray()]);
+                $this->updateQuietly(['state' => static::STATE_CLOSED, 'credential' => []]);
                 Event::dispatch(new ChargeClosed($this));
                 return true;
             } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
