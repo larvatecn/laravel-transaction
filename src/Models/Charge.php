@@ -416,7 +416,7 @@ class Charge extends Model
             if ($this->metadata && $this->metadata['openid']) {
                 $order['openid'] = $this->metadata['openid'];
             }
-            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_WECHAT]);
+            $order['notify_url'] = route('transaction.notify.wechat');
         } elseif ($this->trade_channel == Transaction::CHANNEL_ALIPAY) {
             $order['total_amount'] = $this->total_amount / 100;//总钱数，单位元
             $order['subject'] = $this->subject;
@@ -426,9 +426,9 @@ class Charge extends Model
             if ($this->expired_at) {
                 $order['time_expire'] = $this->expired_at;
             }
-            $order['notify_url'] = route('transaction.notify.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
+            $order['notify_url'] = route('transaction.notify.alipay');
             if ($this->trade_type == 'wap') {
-                $order['return_url'] = route('transaction.callback.charge', ['channel' => Transaction::CHANNEL_ALIPAY]);
+                $order['return_url'] = route('transaction.callback.alipay');
             }
         }
         // 获取支付凭证

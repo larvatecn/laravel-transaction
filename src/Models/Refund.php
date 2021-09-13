@@ -182,12 +182,12 @@ class Refund extends Model
 
     /**
      * 设置退款错误
-     * @param string $code
+     * @param string|int $code
      * @param string $desc
      * @param array $extra
      * @return bool
      */
-    public function markFailed(string $code, string $desc, array $extra = []): bool
+    public function markFailed($code, string $desc, array $extra = []): bool
     {
         $succeed = $this->updateQuietly([
             'status' => self::STATUS_ABNORMAL,
