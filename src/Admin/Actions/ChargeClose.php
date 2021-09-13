@@ -22,7 +22,7 @@ class ChargeClose extends RowAction
     /**
      * @return string
      */
-    protected $title = '重试';
+    protected $title = '关闭';
 
     /**
      * Handle the action request.
@@ -43,7 +43,7 @@ class ChargeClose extends RowAction
      */
     public function render()
     {
-        if ($this->row->status == Charge::STATE_NOTPAY) {
+        if ($this->row->state != Charge::STATE_NOTPAY) {
             $this->disable();
         }
         return parent::render();
