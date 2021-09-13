@@ -15,9 +15,7 @@ declare(strict_types=1);
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Contracts\Routing\ResponseFactory;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Larva\Transaction\Models\Charge;
 use Larva\Transaction\Transaction;
 
 /**
@@ -51,9 +49,6 @@ class ChargeController
     public function query(string $id): JsonResponse
     {
         $charge = Transaction::getCharge($id);
-        if ($charge) {
-            return $this->response->json($charge->toArray());
-        }
-        throw (new ModelNotFoundException())->setModel(Charge::class, $id);
+        return $this->response->json($charge->toArray());
     }
 }

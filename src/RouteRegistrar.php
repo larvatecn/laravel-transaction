@@ -58,9 +58,13 @@ class RouteRegistrar
      */
     public function forNotify()
     {
-        $this->router->match(['get', 'post'], 'notify/charge/{channel}', [//支付通知
-            'uses' => 'NotifyController@charge',
-            'as' => 'transaction.notify.charge',
+        $this->router->match(['get', 'post'], 'notify/wechat', [//微信通知
+            'uses' => 'NotifyController@wechat',
+            'as' => 'transaction.notify.wechat',
+        ]);
+        $this->router->match(['get', 'post'], 'notify/alipay', [//支付宝通知
+            'uses' => 'NotifyController@alipay',
+            'as' => 'transaction.notify.alipay',
         ]);
         $this->router->match(['get', 'post'], 'notify/refund/{channel}', [//退款通知
             'uses' => 'NotifyController@refund',
