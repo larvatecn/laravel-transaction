@@ -44,13 +44,11 @@ class ChargeController
     /**
      * 查询交易状态
      * @param string $id
-     * @return JsonResponse|void
+     * @return JsonResponse
      */
-    public function query(string $id)
+    public function query(string $id): JsonResponse
     {
         $charge = Transaction::getCharge($id);
-        if ($charge) {
-            return $this->response->json($charge->toArray());
-        }
+        return $this->response->json($charge->toArray());
     }
 }

@@ -36,15 +36,10 @@ class CallbackController
 
     /**
      * 支付宝PC和手机付款的回调页面
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
-     * @throws \Yansongda\Pay\Exception\ContainerException
-     * @throws \Yansongda\Pay\Exception\InvalidParamsException
-     * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
     public function alipay()
     {
-        $pay = Transaction::alipay();
-        $params = $pay->callback();
+        $params = Transaction::alipay()->callback();
         $result = Transaction::alipay()->find(['out_trade_no' => $params['out_trade_no']]);
         if (isset($result['trade_status']) && ($result['trade_status'] == 'TRADE_SUCCESS' || $result['trade_status'] == 'TRADE_FINISHED')) {
             $charge = Transaction::getCharge($result['out_trade_no']);

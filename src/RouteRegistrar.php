@@ -62,7 +62,7 @@ class RouteRegistrar
             'uses' => 'NotifyController@wechat',
             'as' => 'transaction.notify.wechat',
         ]);
-        $this->router->match(['get', 'post'], 'notify/alipay', [//支付通知
+        $this->router->match(['get', 'post'], 'notify/alipay', [//支付宝通知
             'uses' => 'NotifyController@alipay',
             'as' => 'transaction.notify.alipay',
         ]);
