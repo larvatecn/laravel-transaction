@@ -12,16 +12,11 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
  * @link http://www.larva.com.cn/
  */
-
 namespace Larva\Transaction\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Larva\Transaction\Models\Charge;
-use Larva\Transaction\Models\Refund;
 use Larva\Transaction\Transaction;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * 通知回调
@@ -34,16 +29,16 @@ class NotifyController
      * 付款通知回调
      * @param Request $request
      * @param string $channel 回调的渠道
-     * @return Response
+     * @return \Symfony\Component\HttpFoundation\Response|void
      */
-    public function charge(Request $request, string $channel): Response
+    public function charge(Request $request, string $channel)
     {
         try {
             $pay = Transaction::getChannel($channel);
             if ($channel == Transaction::CHANNEL_WECHAT) {
                 $params = $pay->verify($request->getContent());
                 if ($params['return_code'] == 'SUCCESS' && $params['result_code'] == 'SUCCESS') {
-                    $charge = Charge::findOrFail($params['out_trade_no']);
+                    $charge = Transaction::getCharge($params['out_trade_no']);
                     $charge->markSucceeded($params['transaction_id'], $params->toArray());//入账
                     return $pay->success();
                 }
@@ -51,7 +46,7 @@ class NotifyController
             } elseif ($channel == Transaction::CHANNEL_ALIPAY) {
                 $params = $pay->verify(); // 验签
                 if ($params['trade_status'] == 'TRADE_SUCCESS' || $params['trade_status'] == 'TRADE_FINISHED') {
-                    $charge = Charge::findOrFail($params['out_trade_no']);
+                    $charge = Transaction::getCharge($params['out_trade_no']);
                     $charge->markSucceeded($params['trade_no'], $params->toArray());
                     return $pay->success();
                 }
@@ -60,23 +55,22 @@ class NotifyController
         } catch (\Exception $e) {
             Log::error($e->getMessage(), $e->getTrace());
         }
-        throw new NotFoundHttpException('Resource does not exist.');
     }
 
     /**
      * 退款通知回调
      * @param Request $request
      * @param string $channel 回调的渠道
-     * @return Response
+     * @return \Symfony\Component\HttpFoundation\Response|void
      */
-    public function refund(Request $request, string $channel): Response
+    public function refund(Request $request, string $channel)
     {
         try {
             $pay = Transaction::getChannel($channel);
             $params = $pay->verify($request->getContent(), true); // 验签
             if ($channel == Transaction::CHANNEL_WECHAT) {
                 if ($params['refund_status'] == 'SUCCESS') {//入账
-                    $refund = Refund::findOrFail($params['out_refund_no']);
+                    $refund = Transaction::getRefund($params['out_refund_no']);
                     $refund->markSucceeded($params['success_time'], $params->toArray());
                     return $pay->success();
                 }
@@ -85,6 +79,5 @@ class NotifyController
         } catch (\Exception $e) {
             Log::error($e->getMessage());
         }
-        throw new NotFoundHttpException('Resource does not exist.');
     }
 }

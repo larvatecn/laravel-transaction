@@ -62,24 +62,20 @@ class RouteRegistrar
             'uses' => 'NotifyController@charge',
             'as' => 'transaction.notify.charge',
         ]);
-
         $this->router->match(['get', 'post'], 'notify/refund/{channel}', [//退款通知
             'uses' => 'NotifyController@refund',
             'as' => 'transaction.notify.refund',
         ]);
-
-        $this->router->match(['get', 'post'], 'callback/charge/{channel}', [//支付回调
-            'uses' => 'PaymentController@paymentCallback',
-            'as' => 'transaction.callback.charge',
+        $this->router->match(['get', 'post'], 'callback/alipay', [//支付宝回调
+            'uses' => 'CallbackController@alipay',
+            'as' => 'transaction.callback.alipay',
         ]);
-
-        $this->router->match(['get'], 'callback/charge/{id}', [//支付回调(一般用于扫码付)
-            'uses' => 'PaymentController@paymentSuccess',
-            'as' => 'transaction.success.charge',
+        $this->router->match(['get'], 'callback/{id}', [//扫码回调
+            'uses' => 'CallbackController@scan',
+            'as' => 'transaction.callback.scan',
         ]);
-
         $this->router->match(['get'], 'charge/{id}', [//支付状态查询
-            'uses' => 'PaymentController@query',
+            'uses' => 'ChargeController@query',
             'as' => 'transaction.charge.query',
         ]);
     }

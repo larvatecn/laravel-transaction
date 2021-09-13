@@ -125,7 +125,7 @@ class Transaction extends Facade
      */
     public static function getCharge(string $id): ?Charge
     {
-        return Charge::where('id', $id)->first();
+        return Charge::findOrFail($id);
     }
 
     /**
@@ -135,7 +135,7 @@ class Transaction extends Facade
      */
     public static function getRefund(string $id): ?Refund
     {
-        return Refund::where('id', $id)->first();
+        return Refund::findOrFail($id);
     }
 
     /**
@@ -145,7 +145,7 @@ class Transaction extends Facade
      */
     public static function getTransfer(string $id): ?Transfer
     {
-        return Transfer::where('id', $id)->first();
+        return Transfer::findOrFail($id);
     }
 
     /**
