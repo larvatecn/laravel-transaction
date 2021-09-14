@@ -14,7 +14,11 @@
 ## Installation
 
 ```bash
-composer require larva/laravel-transaction -vv
+# yansongda/pay 2.x
+composer require "larva/laravel-transaction:^2.0"
+
+# yansongda/pay 3.x
+composer require "larva/laravel-transaction:^3.0"
 ```
 
 事件
