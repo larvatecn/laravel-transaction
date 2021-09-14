@@ -31,10 +31,6 @@ return [
             'app_id' => '',
             // 商户号
             'mch_id' => '',
-            // 合单 app_id
-            'combine_app_id' => '',
-            // 合单商户号
-            'combine_mch_id' => '',
 
             // 商户秘钥 V3
             'mch_secret_key' => '',
