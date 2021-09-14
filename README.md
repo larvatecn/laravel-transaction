@@ -33,8 +33,18 @@ composer require "larva/laravel-transaction:^3.0"
 ```
 
 AppServiceProvider 的 boot 中注册 路由
+
 ```php
 \Larva\Transaction\Transaction::routes();
+```
+
+在中间件 `App\Http\Middleware\VerifyCsrfToken` 排除支付回调相关的路由，如：
+
+```php
+protected $except = [
+    // ...
+    'transaction',
+];
 ```
 
 你自己的订单关联
