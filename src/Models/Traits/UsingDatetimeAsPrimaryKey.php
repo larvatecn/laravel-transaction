@@ -28,7 +28,7 @@ trait UsingDatetimeAsPrimaryKey
     }
 
     /**
-     * 生成主键
+     * 生成主键 长度16位
      * @return int
      */
     public function generateKey(): int
