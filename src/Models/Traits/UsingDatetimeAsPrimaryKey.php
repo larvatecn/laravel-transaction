@@ -33,13 +33,13 @@ trait UsingDatetimeAsPrimaryKey
      */
     public function generateKey(): int
     {
-        $i = rand(0, 9999);
+        $i = rand(0, 99);
         do {
-            if (9999 == $i) {
+            if (99 == $i) {
                 $i = 0;
             }
             $i++;
-            $id = date('YmdHis') . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
+            $id = date('YmdHis') . str_pad((string)$i, 2, '0', STR_PAD_LEFT);
             $row = static::query()->where($this->primaryKey, '=', $id)->exists();
         } while ($row);
         return (int)$id;
