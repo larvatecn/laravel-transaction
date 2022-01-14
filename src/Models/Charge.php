@@ -360,7 +360,7 @@ class Charge extends Model
     {
         if ($this->state == static::STATE_NOTPAY) {
             if ($this->trade_channel == Transaction::CHANNEL_WECHAT) {
-                $result = Transaction::wechat()->close(['out_trade_no' => $this->outTradeNo]);
+                Transaction::wechat()->close(['out_trade_no' => $this->outTradeNo]);
                 $this->updateQuietly(['state' => static::STATE_CLOSED, 'credential' => []]);
                 Event::dispatch(new ChargeClosed($this));
                 return true;
