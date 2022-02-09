@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use Larva\Transaction\Models\Refund;
 
-class CreateTransactionRefundsTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -39,4 +39,4 @@ class CreateTransactionRefundsTable extends Migration
     {
         Schema::dropIfExists('transaction_refunds');
     }
-}
+};

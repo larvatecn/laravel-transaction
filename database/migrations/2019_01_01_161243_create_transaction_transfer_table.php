@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use Larva\Transaction\Models\Transfer;
 
-class CreateTransactionTransferTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -41,4 +41,4 @@ class CreateTransactionTransferTable extends Migration
     {
         Schema::dropIfExists('transaction_transfer');
     }
-}
+};
