@@ -1,8 +1,10 @@
 # laravel-transaction
 
-[![Latest Stable Version](https://poser.pugx.org/larva/laravel-transaction/v/stable.png)](https://packagist.org/packages/larva/laravel-transaction)
-[![Total Downloads](https://poser.pugx.org/larva/laravel-transaction/downloads.png)](https://packagist.org/packages/larva/laravel-transaction)
-
+<p align="center">
+    <a href="https://packagist.org/packages/larva/laravel-transaction"><img src="https://poser.pugx.org/larva/laravel-transaction/v/stable" alt="Stable Version"></a>
+    <a href="https://packagist.org/packages/larva/laravel-transaction"><img src="https://poser.pugx.org/larva/laravel-transaction/downloads" alt="Total Downloads"></a>
+    <a href="https://packagist.org/packages/larva/laravel-transaction"><img src="https://poser.pugx.org/larva/laravel-transaction/license" alt="License"></a>
+</p>
 
 这是一个内部收单系统，依赖 yansongda/pay 这个组件，本收单系统，统一了调用。
 备注，交易单位是分；2.x 和 3.x 版本对外接口一致，只是内部调用的第三方接口版本不同，本扩展拉齐了开发体验；如果你使用了 微信的 企业付款到钱包接口，
