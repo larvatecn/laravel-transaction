@@ -1,15 +1,21 @@
 <?php
+/**
+ * This is NOT a freeware, use is subject to license terms.
+ *
+ * @copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
+ */
 
 declare(strict_types=1);
 /**
  * This is NOT a freeware, use is subject to license terms.
  */
+
 namespace Larva\Transaction;
 
 use Illuminate\Contracts\Routing\Registrar as Router;
 
 /**
- * Class RouteRegistrar
+ * 路由注册
  *
  * @author Tongle Xu <xutongle@gmail.com>
  */
@@ -18,14 +24,14 @@ class RouteRegistrar
     /**
      * The router implementation.
      *
-     * @var \Illuminate\Contracts\Routing\Registrar
+     * @var Router
      */
     protected $router;
 
     /**
      * Create a new route registrar instance.
      *
-     * @param \Illuminate\Contracts\Routing\Registrar $router
+     * @param Router $router
      * @return void
      */
     public function __construct(Router $router)

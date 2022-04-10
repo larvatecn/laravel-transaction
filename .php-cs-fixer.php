@@ -2,6 +2,8 @@
 
 $header = <<<'EOF'
 This is NOT a freeware, use is subject to license terms.
+
+@copyright Copyright (c) 2010-2099 Jinan Larva Information Technology Co., Ltd.
 EOF;
 
 return (new PhpCsFixer\Config())
@@ -12,8 +14,8 @@ return (new PhpCsFixer\Config())
         'header_comment' => [
             'comment_type' => 'PHPDoc',
             'header' => $header,
-            'separate' => 'none',
-            'location' => 'after_declare_strict',
+            'separate' => 'bottom',
+            'location' => 'after_open',
         ],
         'binary_operator_spaces' => true,
         'blank_line_before_statement' => [
@@ -71,11 +73,18 @@ return (new PhpCsFixer\Config())
         'standardize_not_equals' => true,
         'multiline_comment_opening_closing' => true,
         'ternary_to_null_coalescing' => true,
-        'declare_strict_types' => true,//激进，强制打开严格模式
+        //'declare_strict_types' => true,//激进，强制打开严格模式
     ])->setFinder(
         PhpCsFixer\Finder::create()
+            ->exclude('bootstrap')
             ->exclude('config')
             ->exclude('database')
+            ->exclude('lang')
+            ->exclude('node_modules')
+            ->exclude('public')
+            ->exclude('storage')
+            ->exclude('vendor')
             ->exclude('resources')
+            ->exclude('routes')
             ->in(__DIR__)
     )->setUsingCache(false);
