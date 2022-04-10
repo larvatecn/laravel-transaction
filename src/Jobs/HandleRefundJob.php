@@ -6,9 +6,6 @@
  */
 
 declare(strict_types=1);
-/**
- * This is NOT a freeware, use is subject to license terms.
- */
 
 namespace Larva\Transaction\Jobs;
 
@@ -20,7 +17,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Larva\Transaction\Models\Refund;
 
-class HandleRefundJob implements ShouldQueue
+class HandleRefundJob implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 

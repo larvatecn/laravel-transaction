@@ -6,9 +6,6 @@
  */
 
 declare(strict_types=1);
-/**
- * This is NOT a freeware, use is subject to license terms.
- */
 
 namespace Larva\Transaction\Models;
 
@@ -24,7 +21,6 @@ use Larva\Transaction\Events\ChargeFailed;
 use Larva\Transaction\Events\ChargeSucceeded;
 use Larva\Transaction\Transaction;
 use Larva\Transaction\TransactionException;
-use Yansongda\Pay\Exception\ContainerDependencyException;
 use Yansongda\Pay\Exception\ContainerException;
 use Yansongda\Pay\Exception\InvalidParamsException;
 use Yansongda\Pay\Exception\ServiceNotFoundException;
@@ -460,7 +456,7 @@ class Charge extends Model
                 }
             }
             $this->updateQuietly(['credential' => $credential]);
-        } catch (ContainerDependencyException | ContainerException | InvalidParamsException | ServiceNotFoundException $e) {
+        } catch (ContainerException | InvalidParamsException | ServiceNotFoundException $e) {
             $this->markFailed($e->getCode(), $e->getMessage());
             return;
         }

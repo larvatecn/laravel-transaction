@@ -6,9 +6,6 @@
  */
 
 declare(strict_types=1);
-/**
- * This is NOT a freeware, use is subject to license terms.
- */
 
 namespace Larva\Transaction;
 
@@ -49,7 +46,6 @@ class TransactionServiceProvider extends ServiceProvider
      *
      * @return void
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */

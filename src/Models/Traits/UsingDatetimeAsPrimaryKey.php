@@ -6,9 +6,6 @@
  */
 
 declare(strict_types=1);
-/**
- * This is NOT a freeware, use is subject to license terms.
- */
 
 namespace Larva\Transaction\Models\Traits;
 
@@ -23,7 +20,7 @@ trait UsingDatetimeAsPrimaryKey
     public static function bootUsingDatetimeAsPrimaryKey(): void
     {
         static::creating(function (self $model): void {
-            /* @var \Illuminate\Database\Eloquent\Model|UsingDatetimeAsPrimaryKey $model */
+            /* @var Model|UsingDatetimeAsPrimaryKey $model */
             if (empty($model->{$model->getKeyName()})) {
                 $model->{$model->getKeyName()} = $model->generateKey();
             }

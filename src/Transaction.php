@@ -6,9 +6,6 @@
  */
 
 declare(strict_types=1);
-/**
- * This is NOT a freeware, use is subject to license terms.
- */
 
 namespace Larva\Transaction;
 
