@@ -42,6 +42,9 @@ return [
         // 微信支付分配的微信商户号
         'mch_id' => env('WECHAT_MCH_ID', ''),
 
+        //'sub_mch_id' => env('WECHAT_SUB_MCH_ID', ''),
+        //'sub_app_id' => env('WECHAT_SUB_APP_ID', ''),
+
         // 微信支付异步通知地址
         'notify_url' => '',
 
